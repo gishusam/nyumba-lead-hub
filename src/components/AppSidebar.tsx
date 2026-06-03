@@ -10,7 +10,7 @@ import {
   Building,
 } from "lucide-react";
 
-const items = [
+const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/apartments", label: "Apartments", icon: Building2 },
   { to: "/agencies", label: "Agencies", icon: Briefcase },
@@ -18,7 +18,7 @@ const items = [
   { to: "/leads", label: "My Leads", icon: Inbox },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function AppSidebar() {
   const path = useRouterState({ select: (r) => r.location.pathname });
