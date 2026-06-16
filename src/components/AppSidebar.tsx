@@ -8,10 +8,12 @@ import {
   BarChart3,
   Settings,
   Building,
+  Database,
 } from "lucide-react";
 
 const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/scrape", label: "Data Scraper", icon: Database },
   { to: "/apartments", label: "Apartments", icon: Building2 },
   { to: "/agencies", label: "Agencies", icon: Briefcase },
   { to: "/landlords", label: "Landlords", icon: UserSquare2 },
