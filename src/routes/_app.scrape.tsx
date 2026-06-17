@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  MapPin, Database, Loader2, CheckCircle2, Building2, Briefcase, HardHat, Globe2,
+  MapPin, Database, Loader2, CheckCircle2, Building2, Briefcase, HardHat, Globe2, Building,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/scrape")({
@@ -16,100 +16,70 @@ interface Zone {
   id: string;
   name: string;
   county: string;
-  // Polygon points in a 1000x700 viewBox (rough Nairobi metro layout)
+  city: string;
+  // Polygon points in a 1000x700 viewBox
   points: string;
-  // Label anchor
   cx: number;
   cy: number;
   coverage: Record<ScraperType, Coverage>;
   records: Record<ScraperType, number>;
 }
 
+// Cleaner, more spaced-out layout. Each polygon is a roomy rounded rectangle-ish shape.
 const ZONES: Zone[] = [
-  {
-    id: "westlands", name: "Westlands", county: "Nairobi",
-    points: "380,300 470,290 490,360 410,380 370,350",
-    cx: 425, cy: 335,
+  // ---- Nairobi / Nairobi City ----
+  { id: "westlands", name: "Westlands", county: "Nairobi", city: "Nairobi",
+    points: "330,300 470,300 470,380 330,380", cx: 400, cy: 340,
     coverage: { apartments: "tapped", agencies: "tapped", developers: "partial" },
-    records: { apartments: 487, agencies: 42, developers: 14 },
-  },
-  {
-    id: "kilimani", name: "Kilimani", county: "Nairobi",
-    points: "450,380 540,370 555,440 470,455 445,420",
-    cx: 500, cy: 410,
+    records: { apartments: 487, agencies: 42, developers: 14 } },
+  { id: "parklands", name: "Parklands", county: "Nairobi", city: "Nairobi",
+    points: "490,300 610,300 610,380 490,380", cx: 550, cy: 340,
+    coverage: { apartments: "untapped", agencies: "untapped", developers: "untapped" },
+    records: { apartments: 0, agencies: 0, developers: 0 } },
+  { id: "kilimani", name: "Kilimani", county: "Nairobi", city: "Nairobi",
+    points: "330,400 470,400 470,480 330,480", cx: 400, cy: 440,
     coverage: { apartments: "tapped", agencies: "tapped", developers: "tapped" },
-    records: { apartments: 521, agencies: 38, developers: 22 },
-  },
-  {
-    id: "lavington", name: "Lavington", county: "Nairobi",
-    points: "350,380 440,385 445,450 360,455",
-    cx: 395, cy: 420,
+    records: { apartments: 521, agencies: 38, developers: 22 } },
+  { id: "lavington", name: "Lavington", county: "Nairobi", city: "Nairobi",
+    points: "180,400 310,400 310,480 180,480", cx: 245, cy: 440,
     coverage: { apartments: "tapped", agencies: "partial", developers: "untapped" },
-    records: { apartments: 274, agencies: 18, developers: 0 },
-  },
-  {
-    id: "karen", name: "Karen", county: "Nairobi",
-    points: "300,500 410,490 430,580 320,590 290,540",
-    cx: 360, cy: 540,
-    coverage: { apartments: "partial", agencies: "partial", developers: "untapped" },
-    records: { apartments: 156, agencies: 11, developers: 0 },
-  },
-  {
-    id: "runda", name: "Runda", county: "Nairobi",
-    points: "440,210 540,200 555,270 460,285",
-    cx: 495, cy: 245,
-    coverage: { apartments: "partial", agencies: "untapped", developers: "untapped" },
-    records: { apartments: 98, agencies: 0, developers: 0 },
-  },
-  {
-    id: "kiambu", name: "Kiambu", county: "Kiambu",
-    points: "320,120 460,110 470,200 330,210",
-    cx: 395, cy: 160,
-    coverage: { apartments: "tapped", agencies: "partial", developers: "untapped" },
-    records: { apartments: 342, agencies: 16, developers: 0 },
-  },
-  {
-    id: "ruiru", name: "Ruiru", county: "Kiambu",
-    points: "560,160 700,150 715,250 575,260",
-    cx: 635, cy: 205,
-    coverage: { apartments: "tapped", agencies: "untapped", developers: "partial" },
-    records: { apartments: 218, agencies: 0, developers: 7 },
-  },
-  {
-    id: "thika", name: "Thika", county: "Kiambu",
-    points: "720,80 880,70 895,180 740,200",
-    cx: 805, cy: 130,
-    coverage: { apartments: "partial", agencies: "untapped", developers: "untapped" },
-    records: { apartments: 189, agencies: 0, developers: 0 },
-  },
-  {
-    id: "parklands", name: "Parklands", county: "Nairobi",
-    points: "470,290 555,280 565,355 495,360",
-    cx: 520, cy: 320,
-    coverage: { apartments: "untapped", agencies: "untapped", developers: "untapped" },
-    records: { apartments: 0, agencies: 0, developers: 0 },
-  },
-  {
-    id: "upperhill", name: "Upper Hill", county: "Nairobi",
-    points: "540,440 620,435 630,510 555,515",
-    cx: 585, cy: 475,
+    records: { apartments: 274, agencies: 18, developers: 0 } },
+  { id: "upperhill", name: "Upper Hill", county: "Nairobi", city: "Nairobi",
+    points: "490,400 610,400 610,480 490,480", cx: 550, cy: 440,
     coverage: { apartments: "partial", agencies: "tapped", developers: "tapped" },
-    records: { apartments: 112, agencies: 27, developers: 19 },
-  },
-  {
-    id: "embakasi", name: "Embakasi", county: "Nairobi",
-    points: "630,440 790,430 810,560 650,570",
-    cx: 720, cy: 500,
+    records: { apartments: 112, agencies: 27, developers: 19 } },
+  { id: "karen", name: "Karen", county: "Nairobi", city: "Nairobi",
+    points: "180,500 310,500 310,600 180,600", cx: 245, cy: 550,
+    coverage: { apartments: "partial", agencies: "partial", developers: "untapped" },
+    records: { apartments: 156, agencies: 11, developers: 0 } },
+  { id: "embakasi", name: "Embakasi", county: "Nairobi", city: "Nairobi",
+    points: "630,400 790,400 790,500 630,500", cx: 710, cy: 450,
     coverage: { apartments: "untapped", agencies: "untapped", developers: "untapped" },
-    records: { apartments: 0, agencies: 0, developers: 0 },
-  },
-  {
-    id: "athi", name: "Athi River", county: "Machakos",
-    points: "560,600 760,590 780,680 580,690",
-    cx: 670, cy: 640,
+    records: { apartments: 0, agencies: 0, developers: 0 } },
+
+  // ---- Kiambu County ----
+  { id: "runda", name: "Runda", county: "Kiambu", city: "Kiambu Town",
+    points: "330,200 470,200 470,280 330,280", cx: 400, cy: 240,
+    coverage: { apartments: "partial", agencies: "untapped", developers: "untapped" },
+    records: { apartments: 98, agencies: 0, developers: 0 } },
+  { id: "kiambu", name: "Kiambu", county: "Kiambu", city: "Kiambu Town",
+    points: "180,200 310,200 310,280 180,280", cx: 245, cy: 240,
+    coverage: { apartments: "tapped", agencies: "partial", developers: "untapped" },
+    records: { apartments: 342, agencies: 16, developers: 0 } },
+  { id: "ruiru", name: "Ruiru", county: "Kiambu", city: "Ruiru",
+    points: "490,200 630,200 630,280 490,280", cx: 560, cy: 240,
+    coverage: { apartments: "tapped", agencies: "untapped", developers: "partial" },
+    records: { apartments: 218, agencies: 0, developers: 7 } },
+  { id: "thika", name: "Thika", county: "Kiambu", city: "Thika",
+    points: "650,200 810,200 810,280 650,280", cx: 730, cy: 240,
+    coverage: { apartments: "partial", agencies: "untapped", developers: "untapped" },
+    records: { apartments: 189, agencies: 0, developers: 0 } },
+
+  // ---- Machakos County ----
+  { id: "athi", name: "Athi River", county: "Machakos", city: "Athi River",
+    points: "490,520 670,520 670,610 490,610", cx: 580, cy: 565,
     coverage: { apartments: "untapped", agencies: "untapped", developers: "partial" },
-    records: { apartments: 0, agencies: 0, developers: 5 },
-  },
+    records: { apartments: 0, agencies: 0, developers: 5 } },
 ];
 
 const SCRAPERS: { id: ScraperType; label: string; icon: typeof Building2 }[] = [
@@ -120,20 +90,20 @@ const SCRAPERS: { id: ScraperType; label: string; icon: typeof Building2 }[] = [
 
 const COVERAGE_STYLE: Record<Coverage, { fill: string; stroke: string; chip: string; label: string }> = {
   tapped: {
-    fill: "hsl(var(--success) / 0.55)",
-    stroke: "hsl(var(--success))",
+    fill: "hsl(142 71% 45% / 0.32)",
+    stroke: "hsl(142 71% 38%)",
     chip: "bg-success/15 text-success",
     label: "Tapped",
   },
   partial: {
-    fill: "hsl(var(--warning) / 0.45)",
-    stroke: "hsl(var(--warning))",
+    fill: "hsl(38 92% 55% / 0.32)",
+    stroke: "hsl(38 92% 45%)",
     chip: "bg-warning/15 text-warning",
     label: "Partial",
   },
   untapped: {
-    fill: "hsl(var(--muted-foreground) / 0.18)",
-    stroke: "hsl(var(--muted-foreground) / 0.55)",
+    fill: "hsl(220 14% 90%)",
+    stroke: "hsl(220 9% 65%)",
     chip: "bg-muted text-muted-foreground",
     label: "Untapped",
   },
@@ -142,6 +112,7 @@ const COVERAGE_STYLE: Record<Coverage, { fill: string; stroke: string; chip: str
 function ScrapePage() {
   const [scraper, setScraper] = useState<ScraperType>("apartments");
   const [county, setCounty] = useState("All Counties");
+  const [city, setCity] = useState("All Cities");
   const [selected, setSelected] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [running, setRunning] = useState<string | null>(null);
@@ -152,12 +123,19 @@ function ScrapePage() {
     [],
   );
 
-  const filtered = ZONES.filter((z) => county === "All Counties" || z.county === county);
+  const cities = useMemo(() => {
+    const pool = county === "All Counties" ? ZONES : ZONES.filter((z) => z.county === county);
+    return ["All Cities", ...Array.from(new Set(pool.map((z) => z.city)))];
+  }, [county]);
+
+  const filtered = ZONES.filter(
+    (z) =>
+      (county === "All Counties" || z.county === county) &&
+      (city === "All Cities" || z.city === city),
+  );
+
   const totals = filtered.reduce(
-    (acc, z) => {
-      acc[z.coverage[scraper]] += 1;
-      return acc;
-    },
+    (acc, z) => { acc[z.coverage[scraper]] += 1; return acc; },
     { tapped: 0, partial: 0, untapped: 0 } as Record<Coverage, number>,
   );
   const totalRecords = filtered.reduce((s, z) => s + z.records[scraper], 0);
@@ -224,13 +202,30 @@ function ScrapePage() {
 
         <div>
           <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">County</div>
-          <select
-            value={county}
-            onChange={(e) => setCounty(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm font-medium"
-          >
-            {counties.map((c) => <option key={c}>{c}</option>)}
-          </select>
+          <div className="relative">
+            <MapPin className="h-4 w-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={county}
+              onChange={(e) => { setCounty(e.target.value); setCity("All Cities"); }}
+              className="h-9 rounded-md border border-input bg-background pl-8 pr-3 text-sm font-medium"
+            >
+              {counties.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">City</div>
+          <div className="relative">
+            <Building className="h-4 w-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background pl-8 pr-3 text-sm font-medium"
+            >
+              {cities.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
         </div>
 
         <div className="ml-auto flex items-center gap-4 text-xs">
@@ -259,24 +254,26 @@ function ScrapePage() {
             </div>
             <div className="text-xs text-muted-foreground">{filtered.length} areas</div>
           </div>
-          <div className="relative bg-[hsl(var(--muted)/0.3)]">
+          <div className="relative bg-white">
             <svg viewBox="0 0 1000 700" className="w-full h-auto block">
-              {/* subtle grid */}
               <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" opacity="0.4" />
+                <pattern id="grid2" width="50" height="50" patternUnits="userSpaceOnUse">
+                  <path d="M 50 0 L 0 0 0 50" fill="none" stroke="hsl(220 14% 94%)" strokeWidth="1" />
                 </pattern>
               </defs>
-              <rect width="1000" height="700" fill="url(#grid)" />
+              <rect width="1000" height="700" fill="url(#grid2)" />
 
-              {/* "river" decorative path */}
-              <path
-                d="M 0 450 Q 200 420 400 470 T 800 460 T 1000 480"
-                fill="none"
-                stroke="hsl(var(--primary) / 0.15)"
-                strokeWidth="14"
-                strokeLinecap="round"
-              />
+              {/* County band labels */}
+              <text x="500" y="180" textAnchor="middle" fontSize="11" fontWeight="600"
+                    fill="hsl(220 9% 55%)" letterSpacing="2">KIAMBU COUNTY</text>
+              <text x="500" y="380" textAnchor="middle" fontSize="11" fontWeight="600"
+                    fill="hsl(220 9% 55%)" letterSpacing="2">NAIROBI</text>
+              <text x="580" y="500" textAnchor="middle" fontSize="11" fontWeight="600"
+                    fill="hsl(220 9% 55%)" letterSpacing="2">MACHAKOS</text>
+
+              {/* County dividers */}
+              <line x1="120" y1="295" x2="850" y2="295" stroke="hsl(220 14% 88%)" strokeDasharray="6 6" />
+              <line x1="450" y1="510" x2="850" y2="510" stroke="hsl(220 14% 88%)" strokeDasharray="6 6" />
 
               {filtered.map((z) => {
                 const cov = z.coverage[scraper];
@@ -296,27 +293,15 @@ function ScrapePage() {
                       fill={style.fill}
                       stroke={style.stroke}
                       strokeWidth={isSel ? 3 : isHover ? 2.5 : 1.5}
-                      style={{ transition: "all 0.15s", filter: isHover || isSel ? "brightness(1.08)" : undefined }}
+                      rx={12}
+                      style={{ transition: "all 0.15s", filter: isHover || isSel ? "brightness(0.97)" : undefined }}
                     />
-                    <text
-                      x={z.cx}
-                      y={z.cy - 4}
-                      textAnchor="middle"
-                      fontSize="14"
-                      fontWeight="600"
-                      fill="hsl(var(--foreground))"
-                      pointerEvents="none"
-                    >
+                    <text x={z.cx} y={z.cy - 6} textAnchor="middle" fontSize="15" fontWeight="700"
+                          fill="hsl(220 39% 18%)" pointerEvents="none">
                       {z.name}
                     </text>
-                    <text
-                      x={z.cx}
-                      y={z.cy + 12}
-                      textAnchor="middle"
-                      fontSize="11"
-                      fill="hsl(var(--muted-foreground))"
-                      pointerEvents="none"
-                    >
+                    <text x={z.cx} y={z.cy + 14} textAnchor="middle" fontSize="11" fontWeight="500"
+                          fill="hsl(220 9% 40%)" pointerEvents="none">
                       {z.records[scraper]} {z.records[scraper] === 1 ? "record" : "records"}
                     </text>
                   </g>
@@ -333,7 +318,7 @@ function ScrapePage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-lg font-semibold">{sel.name}</div>
-                  <div className="text-xs text-muted-foreground">{sel.county} County</div>
+                  <div className="text-xs text-muted-foreground">{sel.city} · {sel.county} County</div>
                 </div>
                 <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${COVERAGE_STYLE[sel.coverage[scraper]].chip}`}>
                   {COVERAGE_STYLE[sel.coverage[scraper]].label}
@@ -397,7 +382,7 @@ function ScrapePage() {
             </div>
           )}
 
-          <div className="mt-auto pt-4 border-t border-border mt-6">
+          <div className="mt-6 pt-4 border-t border-border">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
               Untapped opportunities
             </div>
@@ -412,7 +397,7 @@ function ScrapePage() {
                     <MapPin className="h-3 w-3 text-muted-foreground" />
                     {z.name}
                   </span>
-                  <span className="text-xs text-muted-foreground">{z.county}</span>
+                  <span className="text-xs text-muted-foreground">{z.city}</span>
                 </button>
               ))}
               {filtered.filter((z) => z.coverage[scraper] === "untapped").length === 0 && (
