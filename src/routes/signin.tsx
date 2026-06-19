@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Home, Eye, EyeOff } from "lucide-react";
+import { login, ApiError } from "@/lib/api";
 
 export const Route = createFileRoute("/signin")({
   head: () => ({
@@ -23,15 +24,26 @@ function SignInPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Mock auth — wire to real backend later
-    setTimeout(() => {
-      setLoading(false);
+    setError(null);
+    try {
+      await login(email.trim(), password);
       navigate({ to: "/" });
-    }, 600);
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.status === 401
+            ? "Invalid email or password."
+            : `Login failed (${err.status}).`
+          : "Network error. Please try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
