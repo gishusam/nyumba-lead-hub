@@ -137,6 +137,10 @@ function SignInPage() {
                 </Link>
               </div>
 
+              {error && (
+                <p className="text-sm text-red-600 -mt-2">{error}</p>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
