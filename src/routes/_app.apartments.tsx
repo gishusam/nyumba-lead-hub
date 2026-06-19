@@ -1,9 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ExternalLink, Phone, Search, Star } from "lucide-react";
-import { apartments, AREAS } from "@/data/mock";
-import type { LeadStatus } from "@/data/mock";
-import { ScorePill, StatusBadge } from "@/components/StatusBadge";
+import { useState } from "react";
+import { ExternalLink, Phone, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  leadsApi,
+  STATUS_LABEL,
+  STATUS_OPTIONS,
+  type Lead,
+  type LeadStatusApi,
+} from "@/lib/api";
+import { ScorePill, StatusBadgeApi } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_app/apartments")({
@@ -11,34 +17,65 @@ export const Route = createFileRoute("/_app/apartments")({
   component: ApartmentsPage,
 });
 
-const STATUSES: ("All" | LeadStatus)[] = ["All", "New", "Called", "Demo Booked", "Won", "Lost"];
-
 function ApartmentsPage() {
-  const [q, setQ] = useState("");
-  const [area, setArea] = useState("All");
-  const [status, setStatus] = useState<(typeof STATUSES)[number]>("All");
-  const [sortDesc, setSortDesc] = useState(true);
+  return <LeadsTable leadType="apartment" title="Apartments" description="Buildings ranked by software-fit and engagement signals." />;
+}
 
-  const rows = useMemo(() => {
-    return apartments
-      .filter((a) =>
-        (area === "All" || a.area === area) &&
-        (status === "All" || a.status === status) &&
-        a.name.toLowerCase().includes(q.toLowerCase())
+export function LeadsTable({
+  leadType,
+  title,
+  description,
+}: {
+  leadType: "apartment" | "agency" | "landlord";
+  title: string;
+  description: string;
+}) {
+  const qc = useQueryClient();
+  const [q, setQ] = useState("");
+  const [area, setArea] = useState("");
+  const [status, setStatus] = useState<"" | LeadStatusApi>("");
+  const [page, setPage] = useState(1);
+
+  const limit = 20;
+  const query = useQuery({
+    queryKey: ["leads", leadType, { area, status, page }],
+    queryFn: () =>
+      leadsApi.list({
+        lead_type: leadType,
+        area: area || undefined,
+        status: status || undefined,
+        page,
+        limit,
+      }),
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: LeadStatusApi }) =>
+      leadsApi.updateStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leads", leadType] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
+  const data = query.data?.data ?? [];
+  const filtered = q
+    ? data.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q.toLowerCase()) ||
+          (r.owner_name ?? "").toLowerCase().includes(q.toLowerCase()),
       )
-      .sort((a, b) => (sortDesc ? b.score - a.score : a.score - b.score));
-  }, [q, area, status, sortDesc]);
+    : data;
+
+  const areas = Array.from(new Set(data.map((r) => r.area).filter(Boolean))) as string[];
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Apartments</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Buildings ranked by software-fit and engagement signals.
-          </p>
+          <h1 className="text-2xl font-semibold">{title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
         </div>
-        <Button>+ Add Apartment</Button>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -48,65 +85,124 @@ function ApartmentsPage() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search building…"
+              placeholder="Filter visible rows…"
               className="w-full h-9 rounded-lg border border-input bg-background pl-9 pr-3 text-sm"
             />
           </div>
-          <select value={area} onChange={(e) => setArea(e.target.value)} className="h-9 rounded-lg border border-input bg-background px-3 text-sm">
-            <option value="All">All areas</option>
-            {AREAS.map((a) => <option key={a}>{a}</option>)}
+          <select
+            value={area}
+            onChange={(e) => {
+              setArea(e.target.value);
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            <option value="">All areas</option>
+            {areas.map((a) => (
+              <option key={a}>{a}</option>
+            ))}
           </select>
-          <select value={status} onChange={(e) => setStatus(e.target.value as LeadStatus)} className="h-9 rounded-lg border border-input bg-background px-3 text-sm">
-            {STATUSES.map((s) => <option key={s}>{s}</option>)}
+          <select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as LeadStatusApi | "");
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            <option value="">All statuses</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
           </select>
-          <Button variant="outline" size="sm" onClick={() => setSortDesc((v) => !v)}>
-            Score {sortDesc ? "↓" : "↑"}
-          </Button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr className="text-left">
-                <th className="px-4 py-3 font-medium">Building</th>
+                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Owner</th>
                 <th className="px-4 py-3 font-medium">Area</th>
-                <th className="px-4 py-3 font-medium">Score</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Website</th>
-                <th className="px-4 py-3 font-medium">Reviews</th>
-                <th className="px-4 py-3 font-medium">Rating</th>
+                <th className="px-4 py-3 font-medium">Score</th>
                 <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Owner</th>
-                <th className="px-4 py-3 font-medium">Last Contact</th>
+                <th className="px-4 py-3 font-medium">Assigned</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map((a) => (
-                <tr key={a.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium">{a.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{a.area}</td>
-                  <td className="px-4 py-3"><ScorePill score={a.score} /></td>
-                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{a.phone}</td>
-                  <td className="px-4 py-3">
-                    <a href="#" className="text-info inline-flex items-center gap-1 hover:underline">
-                      {a.website} <ExternalLink className="h-3 w-3" />
-                    </a>
+              {query.isLoading && (
+                <tr>
+                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                    Loading…
                   </td>
-                  <td className="px-4 py-3 tabular-nums">{a.reviews}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-1">
-                      <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                      <span className="tabular-nums">{a.rating}</span>
-                    </span>
+                </tr>
+              )}
+              {query.isError && (
+                <tr>
+                  <td colSpan={9} className="px-4 py-10 text-center text-destructive">
+                    Failed to load leads.
                   </td>
-                  <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
-                  <td className="px-4 py-3 text-muted-foreground">{a.assignedTo}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{a.lastContact}</td>
+                </tr>
+              )}
+              {!query.isLoading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                    No leads found.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((r: Lead) => (
+                <tr key={r.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-3 font-medium">{r.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.phone ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    {r.website ? (
+                      <a
+                        href={r.website.startsWith("http") ? r.website : `https://${r.website}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-info inline-flex items-center gap-1 hover:underline"
+                      >
+                        {r.website} <ExternalLink className="h-3 w-3" />
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3"><ScorePill score={r.score ?? 0} /></td>
+                  <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
+                  <td className="px-4 py-3 text-muted-foreground">{r.assigned_to ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost"><Phone className="h-3.5 w-3.5" /></Button>
-                      <Button size="sm" variant="outline">Details</Button>
+                      {r.phone && (
+                        <a href={`tel:${r.phone}`}>
+                          <Button size="sm" variant="ghost"><Phone className="h-3.5 w-3.5" /></Button>
+                        </a>
+                      )}
+                      <select
+                        value={r.status}
+                        disabled={updateStatus.isPending}
+                        onChange={(e) =>
+                          updateStatus.mutate({
+                            id: r.id,
+                            status: e.target.value as LeadStatusApi,
+                          })
+                        }
+                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                      >
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_LABEL[s]}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </td>
                 </tr>
@@ -114,6 +210,32 @@ function ApartmentsPage() {
             </tbody>
           </table>
         </div>
+
+        {query.data && query.data.pages > 1 && (
+          <div className="flex items-center justify-between p-4 border-t border-border text-sm">
+            <div className="text-muted-foreground">
+              Page {query.data.page} of {query.data.pages} · {query.data.total} total
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page >= (query.data.pages ?? 1)}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
