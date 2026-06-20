@@ -217,6 +217,40 @@ export const leadsApi = {
     ),
 };
 
+// ============= Scraper Pipeline =============
+export type ScraperType = "apartments" | "agencies" | "developers";
+export type ScraperRunStatus = "running" | "success" | "failed";
+
+export type ScraperRun = {
+  id: number;
+  scraper_type: ScraperType;
+  areas?: string[] | null;
+  area?: string | null;
+  status: ScraperRunStatus;
+  records_found?: number | null;
+  with_contacts?: number | null;
+  imported?: number | null;
+  updated?: number | null;
+  duplicates?: number | null;
+  rejected?: number | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  created_at?: string | null;
+  duration_seconds?: number | null;
+  error?: string | null;
+};
+
+export const scraperApi = {
+  run: (scraper_type: ScraperType, areas: string[]) =>
+    request<{ success: boolean; run_id: number }>("/api/scraper/run", {
+      method: "POST",
+      body: JSON.stringify({ scraper_type, areas }),
+    }),
+  runs: () => request<ScraperRun[] | { data: ScraperRun[] }>("/api/scraper/runs"),
+  run_detail: (id: number | string) =>
+    request<ScraperRun>(`/api/scraper/runs/${id}`),
+};
+
 // ============= Helpers =============
 export const STATUS_LABEL: Record<LeadStatusApi, string> = {
   new: "New",
@@ -233,3 +267,4 @@ export const STATUS_OPTIONS: LeadStatusApi[] = [
   "won",
   "lost",
 ];
+
