@@ -5,8 +5,9 @@ import { toast } from "sonner";
 import {
   MapPin, Database, Loader2, CheckCircle2, XCircle, Building2, Briefcase, HardHat,
   Globe2, Building, Play, History, AlertTriangle, TrendingUp,
-  Download, Filter, ChevronRight, Clock, FileWarning, ArrowRight,
+  Filter, FileWarning, ArrowRight,
 } from "lucide-react";
+
 import { scraperApi, type ScraperRun, type ScraperType as ApiScraperType } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/scrape")({
