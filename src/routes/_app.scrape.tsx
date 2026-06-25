@@ -8,7 +8,7 @@ import {
   Filter, FileWarning, ArrowRight,
 } from "lucide-react";
 
-import { scraperApi, type ScraperRun, type ScraperType as ApiScraperType } from "@/lib/api";
+import { scraperApi, type ScraperRun, type ScraperType as ApiScraperType, type ScraperRunRecordOutcome } from "@/lib/api";
 
 export const Route = createFileRoute("/_app/scrape")({
   head: () => ({ meta: [{ title: "Lead Acquisition Pipeline — Nyumba Zetu" }] }),
