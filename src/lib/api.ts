@@ -240,7 +240,27 @@ export type ScraperRun = {
   error?: string | null;
 };
 
+export type ScraperRunRecordOutcome = "imported" | "rejected" | "duplicate";
+
+export type ScraperRunRecord = {
+  id: number;
+  name: string;
+  area: string;
+  phone: string | null;
+  website: string | null;
+  category: string | null;
+  outcome: ScraperRunRecordOutcome;
+  reason: string | null;
+};
+
+export type ScraperRunRecords = {
+  run_id: number;
+  summary: { imported: number; rejected: number; duplicate: number; total: number };
+  records: ScraperRunRecord[];
+};
+
 export const scraperApi = {
+
   run: (scraper_type: ScraperType, areas: string[]) =>
     request<{ success: boolean; run_id: number }>("/api/scraper/run", {
       method: "POST",
@@ -249,6 +269,9 @@ export const scraperApi = {
   runs: () => request<ScraperRun[] | { data: ScraperRun[] }>("/api/scraper/runs"),
   run_detail: (id: number | string) =>
     request<ScraperRun>(`/api/scraper/runs/${id}`),
+  records: (id: number | string) =>
+    request<ScraperRunRecords>(`/api/scraper/runs/${id}/records`),
+
 };
 
 // ============= Helpers =============
