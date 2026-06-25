@@ -519,6 +519,10 @@ function ScrapePage() {
         </div>
       </section>
 
+      {/* SECTION 4b: Drill-down records audit */}
+      {selectedRunId != null && <RunRecordsPanel runId={selectedRunId} />}
+
+
       {/* SECTION 5: Errors / failed runs */}
       {runs.some((r) => r.status === "failed") && (
         <section className="rounded-xl border border-border bg-card shadow-sm p-6">
