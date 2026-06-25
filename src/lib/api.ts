@@ -249,6 +249,9 @@ export const scraperApi = {
   runs: () => request<ScraperRun[] | { data: ScraperRun[] }>("/api/scraper/runs"),
   run_detail: (id: number | string) =>
     request<ScraperRun>(`/api/scraper/runs/${id}`),
+  records: (id: number | string) =>
+    request<ScraperRunRecords>(`/api/scraper/runs/${id}/records`),
+
 };
 
 // ============= Helpers =============
