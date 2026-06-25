@@ -583,3 +583,104 @@ function Stat({ label, value, tone = "" }: { label: string; value?: number | nul
     </div>
   );
 }
+
+type TabKey = ScraperRunRecordOutcome;
+
+const TAB_STYLES: Record<TabKey, { active: string; idle: string; label: string; rowTone: string }> = {
+  imported:  { active: "bg-success/15 text-success border-success/40",       idle: "text-muted-foreground hover:text-foreground", label: "Imported",   rowTone: "" },
+  rejected:  { active: "bg-destructive/15 text-destructive border-destructive/40", idle: "text-muted-foreground hover:text-foreground", label: "Rejected",   rowTone: "" },
+  duplicate: { active: "bg-warning/20 text-warning border-warning/50",       idle: "text-muted-foreground hover:text-foreground", label: "Duplicates", rowTone: "" },
+};
+
+function RunRecordsPanel({ runId }: { runId: number }) {
+  const [tab, setTab] = useState<TabKey>("rejected");
+  const q = useQuery({
+    queryKey: ["scraper", "records", runId],
+    queryFn: () => scraperApi.records(runId),
+  });
+
+  const data = q.data;
+  const counts = {
+    imported: data?.summary?.imported ?? 0,
+    rejected: data?.summary?.rejected ?? 0,
+    duplicate: data?.summary?.duplicate ?? 0,
+  };
+  const records = (data?.records ?? []).filter((r) => r.outcome === tab);
+
+  return (
+    <section className="rounded-xl border border-border bg-card shadow-sm">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-sm font-semibold">Run #{runId} — Record Audit</div>
+          <div className="text-xs text-muted-foreground">
+            Every record the scraper found and what happened to it.
+          </div>
+        </div>
+        <div className="inline-flex items-center gap-2">
+          {(["imported", "rejected", "duplicate"] as TabKey[]).map((k) => {
+            const s = TAB_STYLES[k];
+            const active = tab === k;
+            return (
+              <button
+                key={k}
+                onClick={() => setTab(k)}
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 h-8 text-xs font-semibold transition-colors ${
+                  active ? s.active : `border-transparent ${s.idle}`
+                }`}
+              >
+                {s.label} ({counts[k]})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40 text-xs text-muted-foreground">
+            <tr className="text-left">
+              {["Name", "Area", "Phone", "Website", "Category", "Reason"].map((h) => (
+                <th key={h} className="px-4 py-2.5 font-medium">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {q.isLoading && (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin inline mr-2" /> Loading records…
+              </td></tr>
+            )}
+            {q.isError && !q.isLoading && (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-destructive">
+                Failed to load records for this run.
+              </td></tr>
+            )}
+            {!q.isLoading && !q.isError && records.length === 0 && (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                No {TAB_STYLES[tab].label.toLowerCase()} records for this run.
+              </td></tr>
+            )}
+            {records.map((r) => (
+              <tr key={r.id} className="border-t border-border hover:bg-accent/40">
+                <td className="px-4 py-2.5 font-medium">{r.name}</td>
+                <td className="px-4 py-2.5">{r.area || "—"}</td>
+                <td className="px-4 py-2.5 tabular-nums">{r.phone || "—"}</td>
+                <td className="px-4 py-2.5">
+                  {r.website ? (
+                    <a href={r.website} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate inline-block max-w-[220px] align-bottom">
+                      {r.website.replace(/^https?:\/\//, "")}
+                    </a>
+                  ) : "—"}
+                </td>
+                <td className="px-4 py-2.5">{r.category || "—"}</td>
+                <td className={`px-4 py-2.5 text-xs ${tab === "rejected" ? "text-destructive" : "text-muted-foreground"}`}>
+                  {r.reason || "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
