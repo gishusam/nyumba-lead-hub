@@ -6,6 +6,7 @@ import {
   UserSquare2,
   Inbox,
   BarChart3,
+  FileBarChart,
   Settings,
   Building,
   Database,
@@ -19,6 +20,7 @@ const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/landlords", label: "Landlords", icon: UserSquare2 },
   { to: "/leads", label: "My Leads", icon: Inbox },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 

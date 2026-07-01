@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppScrapeRouteImport } from './routes/_app.scrape'
+import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppLeadsRouteImport } from './routes/_app.leads'
 import { Route as AppLandlordsRouteImport } from './routes/_app.landlords'
 import { Route as AppApartmentsRouteImport } from './routes/_app.apartments'
@@ -42,6 +43,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const AppScrapeRoute = AppScrapeRouteImport.update({
   id: '/scrape',
   path: '/scrape',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AppRoute,
 } as any)
 const AppLeadsRoute = AppLeadsRouteImport.update({
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/apartments': typeof AppApartmentsRoute
   '/landlords': typeof AppLandlordsRoute
   '/leads': typeof AppLeadsRoute
+  '/reports': typeof AppReportsRoute
   '/scrape': typeof AppScrapeRoute
   '/settings': typeof AppSettingsRoute
 }
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/apartments': typeof AppApartmentsRoute
   '/landlords': typeof AppLandlordsRoute
   '/leads': typeof AppLeadsRoute
+  '/reports': typeof AppReportsRoute
   '/scrape': typeof AppScrapeRoute
   '/settings': typeof AppSettingsRoute
   '/': typeof AppIndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/_app/apartments': typeof AppApartmentsRoute
   '/_app/landlords': typeof AppLandlordsRoute
   '/_app/leads': typeof AppLeadsRoute
+  '/_app/reports': typeof AppReportsRoute
   '/_app/scrape': typeof AppScrapeRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/apartments'
     | '/landlords'
     | '/leads'
+    | '/reports'
     | '/scrape'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/apartments'
     | '/landlords'
     | '/leads'
+    | '/reports'
     | '/scrape'
     | '/settings'
     | '/'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/_app/apartments'
     | '/_app/landlords'
     | '/_app/leads'
+    | '/_app/reports'
     | '/_app/scrape'
     | '/_app/settings'
     | '/_app/'
@@ -184,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppScrapeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/leads': {
       id: '/_app/leads'
       path: '/leads'
@@ -228,6 +247,7 @@ interface AppRouteChildren {
   AppApartmentsRoute: typeof AppApartmentsRoute
   AppLandlordsRoute: typeof AppLandlordsRoute
   AppLeadsRoute: typeof AppLeadsRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppScrapeRoute: typeof AppScrapeRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -239,6 +259,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppApartmentsRoute: AppApartmentsRoute,
   AppLandlordsRoute: AppLandlordsRoute,
   AppLeadsRoute: AppLeadsRoute,
+  AppReportsRoute: AppReportsRoute,
   AppScrapeRoute: AppScrapeRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,

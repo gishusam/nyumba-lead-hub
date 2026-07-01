@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ExternalLink, Phone, Search } from "lucide-react";
+import { ExternalLink, Phone, Search, Upload } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   leadsApi,
@@ -8,9 +8,13 @@ import {
   STATUS_OPTIONS,
   type Lead,
   type LeadStatusApi,
+  type LeadType,
 } from "@/lib/api";
 import { ScorePill, StatusBadgeApi } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
+import { ImportCsvDialog } from "@/components/ImportCsvDialog";
+import { LeadDetailPanel } from "@/components/LeadDetailPanel";
 
 export const Route = createFileRoute("/_app/apartments")({
   head: () => ({ meta: [{ title: "Apartments — Nyumba Zetu" }] }),
@@ -26,7 +30,7 @@ export function LeadsTable({
   title,
   description,
 }: {
-  leadType: "apartment" | "agency" | "landlord";
+  leadType: LeadType;
   title: string;
   description: string;
 }) {
@@ -35,6 +39,8 @@ export function LeadsTable({
   const [area, setArea] = useState("");
   const [status, setStatus] = useState<"" | LeadStatusApi>("");
   const [page, setPage] = useState(1);
+  const [importOpen, setImportOpen] = useState(false);
+  const [activeLead, setActiveLead] = useState<Lead | null>(null);
 
   const limit = 20;
   const query = useQuery({
@@ -71,12 +77,18 @@ export function LeadsTable({
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{title}</h1>
           <p className="text-sm text-muted-foreground mt-1">{description}</p>
         </div>
+        <Button onClick={() => setImportOpen(true)} variant="outline" size="sm">
+          <Upload className="h-4 w-4 mr-1.5" /> Import CSV
+        </Button>
       </div>
+
+      <LeadsSummaryStrip leadType={leadType} />
+
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="flex flex-wrap items-center gap-3 p-4 border-b border-border">
@@ -157,7 +169,11 @@ export function LeadsTable({
                 </tr>
               )}
               {filtered.map((r: Lead) => (
-                <tr key={r.id} className="hover:bg-muted/30">
+                <tr
+                  key={r.id}
+                  onClick={() => setActiveLead(r)}
+                  className="hover:bg-muted/30 cursor-pointer"
+                >
                   <td className="px-4 py-3 font-medium">{r.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
@@ -179,7 +195,7 @@ export function LeadsTable({
                   <td className="px-4 py-3"><ScorePill score={r.score ?? 0} /></td>
                   <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground">{r.assigned_to ?? "—"}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       {r.phone && (
                         <a href={`tel:${r.phone}`}>
@@ -237,6 +253,14 @@ export function LeadsTable({
           </div>
         )}
       </div>
+
+      <ImportCsvDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        leadType={leadType}
+      />
+      <LeadDetailPanel lead={activeLead} onClose={() => setActiveLead(null)} />
     </div>
   );
 }
+
