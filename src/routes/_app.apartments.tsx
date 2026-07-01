@@ -30,15 +30,6 @@ export function LeadsTable({
   title,
   description,
 }: {
-  leadType: "apartment" | "agency" | "landlord";
-  title: string;
-  description: string;
-}) {
-export function LeadsTable({
-  leadType,
-  title,
-  description,
-}: {
   leadType: LeadType;
   title: string;
   description: string;
