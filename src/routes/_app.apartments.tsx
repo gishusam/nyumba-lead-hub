@@ -253,6 +253,14 @@ export function LeadsTable({
           </div>
         )}
       </div>
+
+      <ImportCsvDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        leadType={leadType}
+      />
+      <LeadDetailPanel lead={activeLead} onClose={() => setActiveLead(null)} />
     </div>
   );
 }
+
