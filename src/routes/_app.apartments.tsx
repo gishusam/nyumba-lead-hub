@@ -169,7 +169,11 @@ export function LeadsTable({
                 </tr>
               )}
               {filtered.map((r: Lead) => (
-                <tr key={r.id} className="hover:bg-muted/30">
+                <tr
+                  key={r.id}
+                  onClick={() => setActiveLead(r)}
+                  className="hover:bg-muted/30 cursor-pointer"
+                >
                   <td className="px-4 py-3 font-medium">{r.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{r.owner_name ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
