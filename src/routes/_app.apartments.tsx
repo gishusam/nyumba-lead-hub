@@ -195,7 +195,7 @@ export function LeadsTable({
                   <td className="px-4 py-3"><ScorePill score={r.score ?? 0} /></td>
                   <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground">{r.assigned_to ?? "—"}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       {r.phone && (
                         <a href={`tel:${r.phone}`}>
