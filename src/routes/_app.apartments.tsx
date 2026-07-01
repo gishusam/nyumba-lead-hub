@@ -34,11 +34,22 @@ export function LeadsTable({
   title: string;
   description: string;
 }) {
+export function LeadsTable({
+  leadType,
+  title,
+  description,
+}: {
+  leadType: LeadType;
+  title: string;
+  description: string;
+}) {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [area, setArea] = useState("");
   const [status, setStatus] = useState<"" | LeadStatusApi>("");
   const [page, setPage] = useState(1);
+  const [importOpen, setImportOpen] = useState(false);
+  const [activeLead, setActiveLead] = useState<Lead | null>(null);
 
   const limit = 20;
   const query = useQuery({
