@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ExternalLink, Phone, Search } from "lucide-react";
+import { ExternalLink, Phone, Search, Upload } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   leadsApi,
@@ -8,9 +8,13 @@ import {
   STATUS_OPTIONS,
   type Lead,
   type LeadStatusApi,
+  type LeadType,
 } from "@/lib/api";
 import { ScorePill, StatusBadgeApi } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
+import { ImportCsvDialog } from "@/components/ImportCsvDialog";
+import { LeadDetailPanel } from "@/components/LeadDetailPanel";
 
 export const Route = createFileRoute("/_app/apartments")({
   head: () => ({ meta: [{ title: "Apartments — Nyumba Zetu" }] }),
