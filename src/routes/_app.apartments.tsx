@@ -77,12 +77,18 @@ export function LeadsTable({
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{title}</h1>
           <p className="text-sm text-muted-foreground mt-1">{description}</p>
         </div>
+        <Button onClick={() => setImportOpen(true)} variant="outline" size="sm">
+          <Upload className="h-4 w-4 mr-1.5" /> Import CSV
+        </Button>
       </div>
+
+      <LeadsSummaryStrip leadType={leadType} />
+
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="flex flex-wrap items-center gap-3 p-4 border-b border-border">
