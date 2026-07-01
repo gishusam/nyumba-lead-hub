@@ -198,6 +198,43 @@ function qs(params: Record<string, string | number | undefined>) {
   return `?${u.toString()}`;
 }
 
+export type LeadsSummary = {
+  total?: number;
+  contacted?: number;
+  demo_booked?: number;
+  won?: number;
+  conversion_rate?: number;
+  by_type?: Record<string, Partial<LeadsSummary>>;
+};
+
+export type LeadImportReport = {
+  inserted: number;
+  duplicates: number;
+  rejected: number;
+  errors: number;
+  messages?: string[];
+};
+
+export type LeadTimelineItem = {
+  type: "event" | "note";
+  event_type?: "status_change" | "assigned" | string;
+  changed_by?: string | null;
+  from_value?: string | null;
+  to_value?: string | null;
+  note?: string | null;
+  created_by?: string | null;
+  ai_score?: number | null;
+  ai_score_label?: string | null;
+  ai_score_reason?: string | null;
+  timestamp?: string | null;
+  created_at?: string | null;
+};
+
+export type LeadTimelineResponse = {
+  lead?: Lead;
+  timeline: LeadTimelineItem[];
+};
+
 export const leadsApi = {
   list: (params: ListLeadsParams = {}) =>
     request<LeadListResponse>(`/api/leads${qs(params)}`),
@@ -215,7 +252,75 @@ export const leadsApi = {
       `/api/leads/${id}/notes`,
       { method: "PATCH", body: JSON.stringify({ notes, assigned_to }) },
     ),
+  summary: (lead_type?: LeadType) =>
+    request<LeadsSummary>(`/api/leads/summary${qs({ lead_type })}`),
+  timeline: (id: string) =>
+    request<LeadTimelineResponse>(`/api/leads/${id}/timeline`),
+  addNote: (id: string, note: string, created_by?: string) =>
+    request<unknown>(`/api/leads/${id}/notes`, {
+      method: "POST",
+      body: JSON.stringify({ note, created_by }),
+    }),
+  assign: (id: string, assigned_to?: string) =>
+    request<{ id: string; assigned_to: string }>(`/api/leads/${id}/assign`, {
+      method: "PATCH",
+      body: JSON.stringify(assigned_to !== undefined ? { assigned_to } : {}),
+    }),
+  import: async (file: File, lead_type?: LeadType) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (lead_type) fd.append("lead_type", lead_type);
+    const token = getToken();
+    const res = await fetch(`${API_BASE_URL}/api/leads/import`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    });
+    if (!res.ok) {
+      let body: unknown = null;
+      try { body = await res.json(); } catch {}
+      throw new ApiError(res.status, body, `Import failed: ${res.status}`);
+    }
+    return (await res.json()) as LeadImportReport;
+  },
 };
+
+// ============= Reports =============
+export type WeeklyReport = {
+  activity?: {
+    new_leads?: number;
+    calls_made?: number;
+    demos_booked?: number;
+    won?: number;
+  };
+  top_performer?: {
+    name: string;
+    calls?: number;
+    demos?: number;
+    won?: number;
+  } | null;
+  developers_tracked?: number;
+  follow_ups_due?: Array<{
+    id?: string;
+    name: string;
+    area?: string | null;
+    lead_type?: string;
+    days_overdue: number;
+  }>;
+  coverage?: Array<{
+    area: string;
+    apartments?: number;
+    agencies?: number;
+    landlords?: number;
+    total?: number;
+  }>;
+  untapped_areas?: string[];
+};
+
+export const reportsApi = {
+  weekly: () => request<WeeklyReport>("/api/reports/weekly"),
+};
+
 
 // ============= Scraper Pipeline =============
 export type ScraperType = "apartments" | "agencies" | "developers";
