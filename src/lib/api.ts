@@ -268,7 +268,7 @@ export const leadsApi = {
   timeline: (id: string) =>
     request<LeadTimelineResponse>(`/api/leads/${id}/timeline`),
   addNote: (id: string, note: string, created_by?: string) =>
-    request<unknown>(`/api/leads/${id}/notes`, {
+    request<AiNoteResult>(`/api/leads/${id}/notes`, {
       method: "POST",
       body: JSON.stringify({ note, created_by }),
     }),
