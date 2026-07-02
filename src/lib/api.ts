@@ -317,6 +317,8 @@ export type WeeklyReport = {
     area?: string | null;
     lead_type?: string;
     days_overdue: number;
+    urgency?: "overdue" | "due_today" | "upcoming";
+    follow_up_date?: string | null;
   }>;
   coverage?: Array<{
     area: string;
@@ -328,8 +330,15 @@ export type WeeklyReport = {
   untapped_areas?: string[];
 };
 
+export type WeeklyNarrative = {
+  narrative?: string;
+  text?: string;
+  generated_at?: string;
+};
+
 export const reportsApi = {
   weekly: () => request<WeeklyReport>("/api/reports/weekly"),
+  narrative: () => request<WeeklyNarrative>("/api/reports/weekly/narrative"),
 };
 
 
