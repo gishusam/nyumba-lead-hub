@@ -126,3 +126,14 @@
     letter-spacing: -0.01em;
   }
 }
+
+/* Print styles for reports */
+@media print {
+  .no-print { display: none !important; }
+  aside, nav, header { display: none !important; }
+  body, html { background: white !important; }
+  .print-report { padding: 0 !important; }
+  .print-report * { color: black !important; box-shadow: none !important; }
+  .print-header { display: block !important; margin-bottom: 1rem; font-size: 1.25rem; font-weight: 700; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+}
+.print-header { display: none; }

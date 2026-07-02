@@ -217,7 +217,7 @@ export type LeadImportReport = {
 
 export type LeadTimelineItem = {
   type: "event" | "note";
-  event_type?: "status_change" | "assigned" | string;
+  event_type?: "status_change" | "assigned" | "note_added" | string;
   changed_by?: string | null;
   from_value?: string | null;
   to_value?: string | null;
@@ -226,8 +226,19 @@ export type LeadTimelineItem = {
   ai_score?: number | null;
   ai_score_label?: string | null;
   ai_score_reason?: string | null;
+  follow_up_date?: string | null;
+  signals?: string[] | null;
   timestamp?: string | null;
   created_at?: string | null;
+};
+
+export type AiNoteResult = {
+  ai_score?: number | null;
+  ai_score_label?: string | null;
+  ai_score_reason?: string | null;
+  follow_up_date?: string | null;
+  signals?: string[] | null;
+  note?: string | null;
 };
 
 export type LeadTimelineResponse = {
@@ -257,7 +268,7 @@ export const leadsApi = {
   timeline: (id: string) =>
     request<LeadTimelineResponse>(`/api/leads/${id}/timeline`),
   addNote: (id: string, note: string, created_by?: string) =>
-    request<unknown>(`/api/leads/${id}/notes`, {
+    request<AiNoteResult>(`/api/leads/${id}/notes`, {
       method: "POST",
       body: JSON.stringify({ note, created_by }),
     }),
@@ -306,6 +317,8 @@ export type WeeklyReport = {
     area?: string | null;
     lead_type?: string;
     days_overdue: number;
+    urgency?: "overdue" | "due_today" | "upcoming";
+    follow_up_date?: string | null;
   }>;
   coverage?: Array<{
     area: string;
@@ -317,8 +330,15 @@ export type WeeklyReport = {
   untapped_areas?: string[];
 };
 
+export type WeeklyNarrative = {
+  narrative?: string;
+  text?: string;
+  generated_at?: string;
+};
+
 export const reportsApi = {
   weekly: () => request<WeeklyReport>("/api/reports/weekly"),
+  narrative: () => request<WeeklyNarrative>("/api/reports/weekly/narrative"),
 };
 
 
