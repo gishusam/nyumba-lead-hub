@@ -9,8 +9,14 @@ import {
   type Lead,
   type LeadStatusApi,
   type LeadType,
+  type AiScoreLabel,
 } from "@/lib/api";
-import { ScorePill, StatusBadgeApi } from "@/components/StatusBadge";
+import { StatusBadgeApi } from "@/components/StatusBadge";
+import { AiScoreBadge, AI_SCORE_OPTIONS } from "@/components/AiScoreBadge";
+import { Button } from "@/components/ui/button";
+import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
+import { ImportCsvDialog } from "@/components/ImportCsvDialog";
+import { LeadDetailPanel } from "@/components/LeadDetailPanel";
 import { Button } from "@/components/ui/button";
 import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
 import { ImportCsvDialog } from "@/components/ImportCsvDialog";
