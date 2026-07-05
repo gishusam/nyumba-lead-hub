@@ -160,7 +160,7 @@ export function LeadsTable({
                 <th className="px-4 py-3 font-medium">Area</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Website</th>
-                <th className="px-4 py-3 font-medium">Score</th>
+                <th className="px-4 py-3 font-medium">AI Score</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Assigned</th>
                 <th className="px-4 py-3 font-medium" />
