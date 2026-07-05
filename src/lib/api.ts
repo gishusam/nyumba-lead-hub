@@ -338,6 +338,16 @@ export type WeeklyReport = {
     total?: number;
   }>;
   untapped_areas?: string[];
+  scraped_this_week?: Array<{
+    area: string;
+    type?: string;
+    records_found?: number;
+    imported?: number;
+    duplicates?: number;
+    rejected?: number;
+    last_run?: string | null;
+  }>;
+  untapped_this_week?: string[];
 };
 
 export type WeeklyNarrative = {
