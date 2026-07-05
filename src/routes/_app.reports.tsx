@@ -228,53 +228,66 @@ function ReportsPage() {
         </div>
       </section>
 
-      {/* SECTION B */}
+      {/* SECTION B — Scraping */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">Coverage by area</h2>
+          <h2 className="text-lg font-semibold">Scraped this week</h2>
           <p className="text-sm text-muted-foreground">
-            Areas where lead data has been collected
+            Scraper runs recorded over the past 7 days
           </p>
         </div>
 
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr className="text-left">
-                <th className="px-4 py-3 font-medium">Area</th>
-                <th className="px-4 py-3 font-medium">Apartments</th>
-                <th className="px-4 py-3 font-medium">Agencies</th>
-                <th className="px-4 py-3 font-medium">Landlords</th>
-                <th className="px-4 py-3 font-medium">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {(r.coverage ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                    {q.isLoading ? "Loading…" : "No coverage data yet."}
-                  </td>
+          {(r.scraped_this_week ?? []).length === 0 ? (
+            <div className="p-6 text-sm text-muted-foreground italic">
+              No scraper runs recorded this week
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr className="text-left">
+                  <th className="px-4 py-3 font-medium">Area</th>
+                  <th className="px-4 py-3 font-medium">Type</th>
+                  <th className="px-4 py-3 font-medium">Records Found</th>
+                  <th className="px-4 py-3 font-medium">Imported</th>
+                  <th className="px-4 py-3 font-medium">Duplicates</th>
+                  <th className="px-4 py-3 font-medium">Rejected</th>
+                  <th className="px-4 py-3 font-medium">Last Run</th>
                 </tr>
-              )}
-              {(r.coverage ?? []).map((c) => (
-                <tr key={c.area} className="hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium">{c.area}</td>
-                  <CoverageCell v={c.apartments ?? 0} />
-                  <CoverageCell v={c.agencies ?? 0} />
-                  <CoverageCell v={c.landlords ?? 0} />
-                  <CoverageCell v={c.total ?? 0} bold />
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(r.scraped_this_week ?? []).map((s, i) => {
+                  const imp = s.imported ?? 0;
+                  const rej = s.rejected ?? 0;
+                  return (
+                    <tr key={`${s.area}-${i}`} className="hover:bg-muted/30">
+                      <td className="px-4 py-3 font-medium">{s.area}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{s.type ?? "—"}</td>
+                      <td className="px-4 py-3 tabular-nums">{s.records_found ?? 0}</td>
+                      <td className={`px-4 py-3 tabular-nums font-medium ${imp > 0 ? "text-success" : "text-muted-foreground"}`}>
+                        {imp}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-muted-foreground">{s.duplicates ?? 0}</td>
+                      <td className={`px-4 py-3 tabular-nums font-medium ${rej > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                        {rej}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {s.last_run ? new Date(s.last_run).toLocaleString() : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div>
           <h3 className="font-semibold">
-            Untapped areas ({(r.untapped_areas ?? []).length})
+            Untapped this week ({(r.untapped_this_week ?? []).length})
           </h3>
           <div className="mt-2 flex flex-wrap gap-2">
-            {(r.untapped_areas ?? []).map((ar) => (
+            {(r.untapped_this_week ?? []).map((ar) => (
               <span
                 key={ar}
                 className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-1 text-xs font-medium"
@@ -282,15 +295,14 @@ function ReportsPage() {
                 {ar}
               </span>
             ))}
-            {(r.untapped_areas ?? []).length === 0 && (
+            {(r.untapped_this_week ?? []).length === 0 && (
               <span className="text-sm text-muted-foreground italic">
-                All tracked areas have some data.
+                All tracked areas were scraped this week.
               </span>
             )}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            These areas have no scraped data yet. Run the scraper on these areas to
-            find new leads.
+            Run the scraper on these areas to find new leads
           </p>
         </div>
       </section>
