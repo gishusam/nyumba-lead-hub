@@ -152,6 +152,13 @@ export type LeadStatusApi =
   | "won"
   | "lost";
 
+export type AiScoreLabel =
+  | "LOW_HANGING_FRUIT"
+  | "WARM_PROSPECT"
+  | "EXECUTIVE_LEAD"
+  | "NURTURE"
+  | "NOT_QUALIFIED";
+
 export type Lead = {
   id: string;
   name: string;
@@ -163,6 +170,8 @@ export type Lead = {
   lead_type: LeadType;
   source?: string | null;
   score?: number | null;
+  ai_score?: number | null;
+  ai_score_label?: AiScoreLabel | string | null;
   status: LeadStatusApi;
   notes?: string | null;
   assigned_to?: string | null;
@@ -184,6 +193,7 @@ export type ListLeadsParams = {
   status?: LeadStatusApi;
   area?: string;
   assigned_to?: string;
+  ai_score?: AiScoreLabel | string;
   page?: number;
   limit?: number;
 };
@@ -328,6 +338,16 @@ export type WeeklyReport = {
     total?: number;
   }>;
   untapped_areas?: string[];
+  scraped_this_week?: Array<{
+    area: string;
+    type?: string;
+    records_found?: number;
+    imported?: number;
+    duplicates?: number;
+    rejected?: number;
+    last_run?: string | null;
+  }>;
+  untapped_this_week?: string[];
 };
 
 export type WeeklyNarrative = {

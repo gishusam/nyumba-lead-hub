@@ -9,8 +9,10 @@ import {
   type Lead,
   type LeadStatusApi,
   type LeadType,
+  type AiScoreLabel,
 } from "@/lib/api";
-import { ScorePill, StatusBadgeApi } from "@/components/StatusBadge";
+import { StatusBadgeApi } from "@/components/StatusBadge";
+import { AiScoreBadge, AI_SCORE_OPTIONS } from "@/components/AiScoreBadge";
 import { Button } from "@/components/ui/button";
 import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
 import { ImportCsvDialog } from "@/components/ImportCsvDialog";
@@ -38,18 +40,20 @@ export function LeadsTable({
   const [q, setQ] = useState("");
   const [area, setArea] = useState("");
   const [status, setStatus] = useState<"" | LeadStatusApi>("");
+  const [aiScore, setAiScore] = useState<"" | AiScoreLabel>("");
   const [page, setPage] = useState(1);
   const [importOpen, setImportOpen] = useState(false);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
 
   const limit = 20;
   const query = useQuery({
-    queryKey: ["leads", leadType, { area, status, page }],
+    queryKey: ["leads", leadType, { area, status, aiScore, page }],
     queryFn: () =>
       leadsApi.list({
         lead_type: leadType,
         area: area || undefined,
         status: status || undefined,
+        ai_score: aiScore || undefined,
         page,
         limit,
       }),
@@ -129,6 +133,22 @@ export function LeadsTable({
               </option>
             ))}
           </select>
+          <select
+            value={aiScore}
+            onChange={(e) => {
+              setAiScore(e.target.value as AiScoreLabel | "");
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+            aria-label="AI Score"
+          >
+            <option value="">AI Score: All</option>
+            {AI_SCORE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -140,7 +160,7 @@ export function LeadsTable({
                 <th className="px-4 py-3 font-medium">Area</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Website</th>
-                <th className="px-4 py-3 font-medium">Score</th>
+                <th className="px-4 py-3 font-medium">AI Score</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Assigned</th>
                 <th className="px-4 py-3 font-medium" />
@@ -192,7 +212,7 @@ export function LeadsTable({
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3"><ScorePill score={r.score ?? 0} /></td>
+                  <td className="px-4 py-3"><AiScoreBadge label={r.ai_score_label} score={r.score ?? r.ai_score} /></td>
                   <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground">{r.assigned_to ?? "—"}</td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
