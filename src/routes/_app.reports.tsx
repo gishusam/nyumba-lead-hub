@@ -317,21 +317,7 @@ function ReportsPage() {
   );
 }
 
-function CoverageCell({ v, bold }: { v: number; bold?: boolean }) {
-  const cls =
-    v > 0
-      ? "bg-success/15 text-success"
-      : "bg-muted text-muted-foreground";
-  return (
-    <td className="px-4 py-3">
-      <span
-        className={`inline-flex min-w-[2rem] justify-center rounded-md px-2 py-0.5 text-xs tabular-nums ${cls} ${bold ? "font-semibold" : "font-medium"}`}
-      >
-        {v}
-      </span>
-    </td>
-  );
-}
+
 
 function EmailReportDialog({
   narrative,
