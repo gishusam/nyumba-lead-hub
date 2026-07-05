@@ -133,6 +133,22 @@ export function LeadsTable({
               </option>
             ))}
           </select>
+          <select
+            value={aiScore}
+            onChange={(e) => {
+              setAiScore(e.target.value as AiScoreLabel | "");
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+            aria-label="AI Score"
+          >
+            <option value="">AI Score: All</option>
+            {AI_SCORE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="overflow-x-auto">
