@@ -17,10 +17,6 @@ import { Button } from "@/components/ui/button";
 import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
 import { ImportCsvDialog } from "@/components/ImportCsvDialog";
 import { LeadDetailPanel } from "@/components/LeadDetailPanel";
-import { Button } from "@/components/ui/button";
-import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
-import { ImportCsvDialog } from "@/components/ImportCsvDialog";
-import { LeadDetailPanel } from "@/components/LeadDetailPanel";
 
 export const Route = createFileRoute("/_app/apartments")({
   head: () => ({ meta: [{ title: "Apartments — Nyumba Zetu" }] }),
