@@ -40,18 +40,20 @@ export function LeadsTable({
   const [q, setQ] = useState("");
   const [area, setArea] = useState("");
   const [status, setStatus] = useState<"" | LeadStatusApi>("");
+  const [aiScore, setAiScore] = useState<"" | AiScoreLabel>("");
   const [page, setPage] = useState(1);
   const [importOpen, setImportOpen] = useState(false);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
 
   const limit = 20;
   const query = useQuery({
-    queryKey: ["leads", leadType, { area, status, page }],
+    queryKey: ["leads", leadType, { area, status, aiScore, page }],
     queryFn: () =>
       leadsApi.list({
         lead_type: leadType,
         area: area || undefined,
         status: status || undefined,
+        ai_score: aiScore || undefined,
         page,
         limit,
       }),
