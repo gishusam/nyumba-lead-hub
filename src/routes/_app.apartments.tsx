@@ -212,7 +212,7 @@ export function LeadsTable({
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3"><ScorePill score={r.score ?? 0} /></td>
+                  <td className="px-4 py-3"><AiScoreBadge label={r.ai_score_label} score={r.score ?? r.ai_score} /></td>
                   <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground">{r.assigned_to ?? "—"}</td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
