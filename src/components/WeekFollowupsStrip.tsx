@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Phone } from "lucide-react";
-import { reportsApi, leadsApi, type Lead } from "@/lib/api";
+import { reportsApi, type Lead } from "@/lib/api";
 import { AiScoreBadge } from "@/components/AiScoreBadge";
 import { LeadDetailPanel } from "@/components/LeadDetailPanel";
 
