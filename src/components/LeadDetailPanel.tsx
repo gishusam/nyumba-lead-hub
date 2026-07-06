@@ -85,6 +85,18 @@ export function LeadDetailPanel({
     enabled: !!lead?.id,
   });
 
+  const detailQ = useQuery({
+    queryKey: ["leads", "detail", lead?.id],
+    queryFn: () => leadsApi.get(lead!.id),
+    enabled: !!lead?.id,
+  });
+
+  const notesQ = useQuery({
+    queryKey: ["leads", "notes", lead?.id],
+    queryFn: () => leadsApi.notes(lead!.id),
+    enabled: !!lead?.id,
+  });
+
   const invalidateLead = () => {
     qc.invalidateQueries({ queryKey: ["leads", "timeline", lead?.id] });
     qc.invalidateQueries({ queryKey: ["leads"] });
