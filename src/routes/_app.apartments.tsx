@@ -31,10 +31,12 @@ export function LeadsTable({
   leadType,
   title,
   description,
+  showTier,
 }: {
   leadType: LeadType;
   title: string;
   description: string;
+  showTier?: boolean;
 }) {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
