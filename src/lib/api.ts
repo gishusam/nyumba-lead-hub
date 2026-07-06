@@ -178,6 +178,23 @@ export type Lead = {
   last_contacted?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  ai_score_reason?: string | null;
+  follow_up_date?: string | null;
+  contact_attempts?: number | null;
+  google_rating?: number | null;
+  review_count?: number | null;
+  lead_quality?: string | null;
+  signals?: string[] | null;
+};
+
+export type LeadNote = {
+  id?: string | number;
+  note: string;
+  created_by?: string | null;
+  created_at?: string | null;
+  ai_score?: number | null;
+  ai_score_label?: string | null;
+  ai_score_reason?: string | null;
 };
 
 export type LeadListResponse = {
