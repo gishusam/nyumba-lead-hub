@@ -10,9 +10,9 @@ export const AI_SCORE_OPTIONS: { value: AiScoreLabel; label: string }[] = [
 
 const styles: Record<string, string> = {
   LOW_HANGING_FRUIT: "bg-success/15 text-success border-success/30",
-  WARM_PROSPECT: "bg-info/10 text-info border-info/20",
+  WARM_PROSPECT: "bg-warning/15 text-warning-foreground border-warning/30",
   EXECUTIVE_LEAD: "bg-primary/10 text-primary border-primary/20",
-  NURTURE: "bg-warning/15 text-warning-foreground border-warning/30",
+  NURTURE: "bg-info/10 text-info border-info/20",
   NOT_QUALIFIED: "bg-muted text-muted-foreground border-border",
 };
 

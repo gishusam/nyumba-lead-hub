@@ -17,6 +17,7 @@ const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/scrape", label: "Data Scraper", icon: Database },
   { to: "/apartments", label: "Apartments", icon: Building2 },
   { to: "/agencies", label: "Agencies", icon: Briefcase },
+  { to: "/developers", label: "Developers", icon: Building },
   { to: "/landlords", label: "Landlords", icon: UserSquare2 },
   { to: "/leads", label: "My Leads", icon: Inbox },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },

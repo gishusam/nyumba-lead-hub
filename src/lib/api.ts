@@ -144,7 +144,7 @@ export const dashboardApi = {
 };
 
 // ============= Leads =============
-export type LeadType = "apartment" | "agency" | "landlord";
+export type LeadType = "apartment" | "agency" | "landlord" | "developer";
 export type LeadStatusApi =
   | "new"
   | "called"
@@ -178,6 +178,23 @@ export type Lead = {
   last_contacted?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  ai_score_reason?: string | null;
+  follow_up_date?: string | null;
+  contact_attempts?: number | null;
+  google_rating?: number | null;
+  review_count?: number | null;
+  lead_quality?: string | null;
+  signals?: string[] | null;
+};
+
+export type LeadNote = {
+  id?: string | number;
+  note: string;
+  created_by?: string | null;
+  created_at?: string | null;
+  ai_score?: number | null;
+  ai_score_label?: string | null;
+  ai_score_reason?: string | null;
 };
 
 export type LeadListResponse = {
@@ -259,6 +276,11 @@ export type LeadTimelineResponse = {
 export const leadsApi = {
   list: (params: ListLeadsParams = {}) =>
     request<LeadListResponse>(`/api/leads${qs(params)}`),
+  get: (id: string) => request<Lead>(`/api/leads/${id}`),
+  notes: (id: string) =>
+    request<LeadNote[] | { data: LeadNote[]; notes?: LeadNote[] }>(
+      `/api/leads/${id}/notes`,
+    ),
   search: (q: string) =>
     request<Array<Pick<Lead, "id" | "name" | "owner_name" | "phone" | "area" | "lead_type" | "status" | "score">>>(
       `/api/leads/search${qs({ q })}`,
@@ -348,6 +370,22 @@ export type WeeklyReport = {
     last_run?: string | null;
   }>;
   untapped_this_week?: string[];
+  follow_up_next_7_days?: Array<{
+    date: string;
+    day_label: string;
+    days_from_today: number;
+    count: number;
+    leads: Array<{
+      id: string;
+      name: string;
+      phone?: string | null;
+      area?: string | null;
+      lead_type?: LeadType | string;
+      ai_score?: number | null;
+      ai_score_label?: AiScoreLabel | string | null;
+      status?: LeadStatusApi | string;
+    }>;
+  }>;
 };
 
 export type WeeklyNarrative = {

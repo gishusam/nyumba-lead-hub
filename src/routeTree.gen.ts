@@ -17,6 +17,7 @@ import { Route as AppScrapeRouteImport } from './routes/_app.scrape'
 import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppLeadsRouteImport } from './routes/_app.leads'
 import { Route as AppLandlordsRouteImport } from './routes/_app.landlords'
+import { Route as AppDevelopersRouteImport } from './routes/_app.developers'
 import { Route as AppApartmentsRouteImport } from './routes/_app.apartments'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAgenciesRouteImport } from './routes/_app.agencies'
@@ -60,6 +61,11 @@ const AppLandlordsRoute = AppLandlordsRouteImport.update({
   path: '/landlords',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDevelopersRoute = AppDevelopersRouteImport.update({
+  id: '/developers',
+  path: '/developers',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppApartmentsRoute = AppApartmentsRouteImport.update({
   id: '/apartments',
   path: '/apartments',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/agencies': typeof AppAgenciesRoute
   '/analytics': typeof AppAnalyticsRoute
   '/apartments': typeof AppApartmentsRoute
+  '/developers': typeof AppDevelopersRoute
   '/landlords': typeof AppLandlordsRoute
   '/leads': typeof AppLeadsRoute
   '/reports': typeof AppReportsRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/agencies': typeof AppAgenciesRoute
   '/analytics': typeof AppAnalyticsRoute
   '/apartments': typeof AppApartmentsRoute
+  '/developers': typeof AppDevelopersRoute
   '/landlords': typeof AppLandlordsRoute
   '/leads': typeof AppLeadsRoute
   '/reports': typeof AppReportsRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/_app/agencies': typeof AppAgenciesRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/apartments': typeof AppApartmentsRoute
+  '/_app/developers': typeof AppDevelopersRoute
   '/_app/landlords': typeof AppLandlordsRoute
   '/_app/leads': typeof AppLeadsRoute
   '/_app/reports': typeof AppReportsRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/analytics'
     | '/apartments'
+    | '/developers'
     | '/landlords'
     | '/leads'
     | '/reports'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/analytics'
     | '/apartments'
+    | '/developers'
     | '/landlords'
     | '/leads'
     | '/reports'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/_app/agencies'
     | '/_app/analytics'
     | '/_app/apartments'
+    | '/_app/developers'
     | '/_app/landlords'
     | '/_app/leads'
     | '/_app/reports'
@@ -217,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLandlordsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/developers': {
+      id: '/_app/developers'
+      path: '/developers'
+      fullPath: '/developers'
+      preLoaderRoute: typeof AppDevelopersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/apartments': {
       id: '/_app/apartments'
       path: '/apartments'
@@ -245,6 +264,7 @@ interface AppRouteChildren {
   AppAgenciesRoute: typeof AppAgenciesRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppApartmentsRoute: typeof AppApartmentsRoute
+  AppDevelopersRoute: typeof AppDevelopersRoute
   AppLandlordsRoute: typeof AppLandlordsRoute
   AppLeadsRoute: typeof AppLeadsRoute
   AppReportsRoute: typeof AppReportsRoute
@@ -257,6 +277,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAgenciesRoute: AppAgenciesRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppApartmentsRoute: AppApartmentsRoute,
+  AppDevelopersRoute: AppDevelopersRoute,
   AppLandlordsRoute: AppLandlordsRoute,
   AppLeadsRoute: AppLeadsRoute,
   AppReportsRoute: AppReportsRoute,

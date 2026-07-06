@@ -85,8 +85,22 @@ export function LeadDetailPanel({
     enabled: !!lead?.id,
   });
 
+  const detailQ = useQuery({
+    queryKey: ["leads", "detail", lead?.id],
+    queryFn: () => leadsApi.get(lead!.id),
+    enabled: !!lead?.id,
+  });
+
+  const notesQ = useQuery({
+    queryKey: ["leads", "notes", lead?.id],
+    queryFn: () => leadsApi.notes(lead!.id),
+    enabled: !!lead?.id,
+  });
+
   const invalidateLead = () => {
     qc.invalidateQueries({ queryKey: ["leads", "timeline", lead?.id] });
+    qc.invalidateQueries({ queryKey: ["leads", "detail", lead?.id] });
+    qc.invalidateQueries({ queryKey: ["leads", "notes", lead?.id] });
     qc.invalidateQueries({ queryKey: ["leads"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
   };
@@ -113,8 +127,13 @@ export function LeadDetailPanel({
 
   if (!lead) return null;
 
-  const lp: Lead = timelineQ.data?.lead ?? lead;
+  const lp: Lead = { ...(lead as Lead), ...(timelineQ.data?.lead ?? {}), ...(detailQ.data ?? {}) };
   const timeline: LeadTimelineItem[] = timelineQ.data?.timeline ?? [];
+  const notesRaw = notesQ.data as any;
+  const notes: import("@/lib/api").LeadNote[] = Array.isArray(notesRaw)
+    ? notesRaw
+    : (notesRaw?.data ?? notesRaw?.notes ?? []);
+
 
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
@@ -173,12 +192,39 @@ export function LeadDetailPanel({
                 "—"
               )}
             </Field>
-            {(lp as any).follow_up_date && (
+            <Field label="Email">{lp.email ?? "—"}</Field>
+            {lp.follow_up_date && (
               <Field label="Follow-up">
-                {new Date((lp as any).follow_up_date).toLocaleDateString()}
+                {new Date(lp.follow_up_date).toLocaleDateString()}
+              </Field>
+            )}
+            {lp.last_contacted && (
+              <Field label="Last contacted">
+                {new Date(lp.last_contacted).toLocaleDateString()}
+                {lp.contact_attempts != null && (
+                  <span className="text-muted-foreground"> · {lp.contact_attempts} attempts</span>
+                )}
+              </Field>
+            )}
+            {lp.google_rating != null && (
+              <Field label="Google rating">
+                ★ {lp.google_rating}
+                {lp.review_count != null && (
+                  <span className="text-muted-foreground"> ({lp.review_count} reviews)</span>
+                )}
               </Field>
             )}
           </div>
+
+          {lp.ai_score_reason && (
+            <div className="mt-3 rounded-lg bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-foreground font-medium mr-1">
+                <Sparkles className="h-3 w-3 text-primary" /> AI:
+              </span>
+              {lp.ai_score_reason}
+            </div>
+          )}
+
 
           <div className="mt-4 flex items-center gap-2">
             <select
@@ -270,7 +316,44 @@ export function LeadDetailPanel({
               )}
             </div>
           )}
+
+          {notes.length > 0 && (
+            <div className="pt-3 space-y-2">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Notes history
+              </div>
+              <ul className="space-y-2">
+                {notes.map((n, i) => (
+                  <li
+                    key={n.id ?? i}
+                    className="rounded-lg border border-border bg-card p-3 relative"
+                  >
+                    {n.ai_score_label && (
+                      <span
+                        className={`absolute top-2 right-2 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold ${aiLabelClasses(
+                          n.ai_score_label,
+                        )}`}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        {n.ai_score_label}
+                      </span>
+                    )}
+                    <div className="text-sm whitespace-pre-wrap pr-24">{n.note}</div>
+                    {n.ai_score_reason && (
+                      <div className="mt-1.5 text-xs text-muted-foreground">
+                        {n.ai_score_reason}
+                      </div>
+                    )}
+                    <div className="mt-2 text-[11px] text-muted-foreground">
+                      {n.created_by ?? "—"} · {relativeTime(n.created_at)}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
+
 
         {/* Bottom: timeline */}
         <div className="flex-1 overflow-y-auto px-5 py-4">

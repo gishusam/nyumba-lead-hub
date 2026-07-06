@@ -31,10 +31,12 @@ export function LeadsTable({
   leadType,
   title,
   description,
+  showTier,
 }: {
   leadType: LeadType;
   title: string;
   description: string;
+  showTier?: boolean;
 }) {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
@@ -160,6 +162,7 @@ export function LeadsTable({
                 <th className="px-4 py-3 font-medium">Area</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Website</th>
+                {showTier && <th className="px-4 py-3 font-medium">Tier</th>}
                 <th className="px-4 py-3 font-medium">AI Score</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Assigned</th>
@@ -212,6 +215,9 @@ export function LeadsTable({
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
+                  {showTier && (
+                    <td className="px-4 py-3"><TierBadge quality={r.lead_quality} /></td>
+                  )}
                   <td className="px-4 py-3"><AiScoreBadge label={r.ai_score_label} score={r.score ?? r.ai_score} /></td>
                   <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground">{r.assigned_to ?? "—"}</td>
@@ -283,4 +289,18 @@ export function LeadsTable({
     </div>
   );
 }
+
+export function TierBadge({ quality }: { quality?: string | null }) {
+  const isPlatinum = quality === "VERIFIED BUSINESS";
+  const label = isPlatinum ? "PLATINUM" : "CORPORATE";
+  const cls = isPlatinum
+    ? "bg-warning/20 text-warning-foreground border-warning/50"
+    : "bg-muted text-muted-foreground border-border";
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 

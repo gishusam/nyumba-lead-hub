@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, STATUS_LABEL, type LeadStatusApi } from "@/lib/api";
+import { WeekFollowupsStrip } from "@/components/WeekFollowupsStrip";
 
 export const Route = createFileRoute("/_app/")({
   head: () => ({
@@ -70,6 +71,9 @@ function Dashboard() {
           );
         })}
       </div>
+
+      <WeekFollowupsStrip />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
