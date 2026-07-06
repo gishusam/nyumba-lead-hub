@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, STATUS_LABEL, type LeadStatusApi } from "@/lib/api";
+import { WeekFollowupsStrip } from "@/components/WeekFollowupsStrip";
 
 export const Route = createFileRoute("/_app/")({
   head: () => ({
