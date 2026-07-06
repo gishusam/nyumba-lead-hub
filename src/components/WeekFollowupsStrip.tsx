@@ -116,6 +116,3 @@ export function WeekFollowupsStrip() {
     </div>
   );
 }
-
-// Silence unused import warning; leadsApi may be used in future extensions.
-export const _ = leadsApi;
