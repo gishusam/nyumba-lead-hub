@@ -127,8 +127,13 @@ export function LeadDetailPanel({
 
   if (!lead) return null;
 
-  const lp: Lead = timelineQ.data?.lead ?? lead;
+  const lp: Lead = { ...(lead as Lead), ...(timelineQ.data?.lead ?? {}), ...(detailQ.data ?? {}) };
   const timeline: LeadTimelineItem[] = timelineQ.data?.timeline ?? [];
+  const notesRaw = notesQ.data as any;
+  const notes: import("@/lib/api").LeadNote[] = Array.isArray(notesRaw)
+    ? notesRaw
+    : (notesRaw?.data ?? notesRaw?.notes ?? []);
+
 
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
