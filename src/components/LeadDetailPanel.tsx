@@ -192,12 +192,39 @@ export function LeadDetailPanel({
                 "—"
               )}
             </Field>
-            {(lp as any).follow_up_date && (
+            <Field label="Email">{lp.email ?? "—"}</Field>
+            {lp.follow_up_date && (
               <Field label="Follow-up">
-                {new Date((lp as any).follow_up_date).toLocaleDateString()}
+                {new Date(lp.follow_up_date).toLocaleDateString()}
+              </Field>
+            )}
+            {lp.last_contacted && (
+              <Field label="Last contacted">
+                {new Date(lp.last_contacted).toLocaleDateString()}
+                {lp.contact_attempts != null && (
+                  <span className="text-muted-foreground"> · {lp.contact_attempts} attempts</span>
+                )}
+              </Field>
+            )}
+            {lp.google_rating != null && (
+              <Field label="Google rating">
+                ★ {lp.google_rating}
+                {lp.review_count != null && (
+                  <span className="text-muted-foreground"> ({lp.review_count} reviews)</span>
+                )}
               </Field>
             )}
           </div>
+
+          {lp.ai_score_reason && (
+            <div className="mt-3 rounded-lg bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-foreground font-medium mr-1">
+                <Sparkles className="h-3 w-3 text-primary" /> AI:
+              </span>
+              {lp.ai_score_reason}
+            </div>
+          )}
+
 
           <div className="mt-4 flex items-center gap-2">
             <select
