@@ -276,6 +276,11 @@ export type LeadTimelineResponse = {
 export const leadsApi = {
   list: (params: ListLeadsParams = {}) =>
     request<LeadListResponse>(`/api/leads${qs(params)}`),
+  get: (id: string) => request<Lead>(`/api/leads/${id}`),
+  notes: (id: string) =>
+    request<LeadNote[] | { data: LeadNote[]; notes?: LeadNote[] }>(
+      `/api/leads/${id}/notes`,
+    ),
   search: (q: string) =>
     request<Array<Pick<Lead, "id" | "name" | "owner_name" | "phone" | "area" | "lead_type" | "status" | "score">>>(
       `/api/leads/search${qs({ q })}`,
