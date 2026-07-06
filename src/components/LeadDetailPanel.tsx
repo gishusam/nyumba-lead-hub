@@ -99,6 +99,8 @@ export function LeadDetailPanel({
 
   const invalidateLead = () => {
     qc.invalidateQueries({ queryKey: ["leads", "timeline", lead?.id] });
+    qc.invalidateQueries({ queryKey: ["leads", "detail", lead?.id] });
+    qc.invalidateQueries({ queryKey: ["leads", "notes", lead?.id] });
     qc.invalidateQueries({ queryKey: ["leads"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
   };
