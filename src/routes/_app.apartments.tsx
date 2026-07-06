@@ -290,3 +290,17 @@ export function LeadsTable({
   );
 }
 
+export function TierBadge({ quality }: { quality?: string | null }) {
+  const isPlatinum = quality === "VERIFIED BUSINESS";
+  const label = isPlatinum ? "PLATINUM" : "CORPORATE";
+  const cls = isPlatinum
+    ? "bg-warning/20 text-warning-foreground border-warning/50"
+    : "bg-muted text-muted-foreground border-border";
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+
