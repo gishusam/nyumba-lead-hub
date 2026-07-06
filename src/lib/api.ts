@@ -370,6 +370,22 @@ export type WeeklyReport = {
     last_run?: string | null;
   }>;
   untapped_this_week?: string[];
+  follow_up_next_7_days?: Array<{
+    date: string;
+    day_label: string;
+    days_from_today: number;
+    count: number;
+    leads: Array<{
+      id: string;
+      name: string;
+      phone?: string | null;
+      area?: string | null;
+      lead_type?: LeadType | string;
+      ai_score?: number | null;
+      ai_score_label?: AiScoreLabel | string | null;
+      status?: LeadStatusApi | string;
+    }>;
+  }>;
 };
 
 export type WeeklyNarrative = {
