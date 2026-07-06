@@ -144,7 +144,7 @@ export const dashboardApi = {
 };
 
 // ============= Leads =============
-export type LeadType = "apartment" | "agency" | "landlord";
+export type LeadType = "apartment" | "agency" | "landlord" | "developer";
 export type LeadStatusApi =
   | "new"
   | "called"
