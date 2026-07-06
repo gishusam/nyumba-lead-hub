@@ -17,7 +17,7 @@ const TYPES: TypeMeta[] = [
   { type: "landlord", label: "Landlords", to: "/landlords", icon: UserSquare2 },
 ];
 
-function useCount(lead_type: LeadType, status?: "called" | "won") {
+function countQuery(lead_type: LeadType, status?: "called" | "won") {
   return {
     queryKey: ["leads", "count", lead_type, status ?? "all"],
     queryFn: () =>
@@ -29,9 +29,9 @@ function useCount(lead_type: LeadType, status?: "called" | "won") {
 export function LeadsSummaryStrip({ leadType }: { leadType: LeadType }) {
   const queries = useQueries({
     queries: TYPES.flatMap((t) => [
-      useCount(t.type),
-      useCount(t.type, "called"),
-      useCount(t.type, "won"),
+      countQuery(t.type),
+      countQuery(t.type, "called"),
+      countQuery(t.type, "won"),
     ]),
   });
 
