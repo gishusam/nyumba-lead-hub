@@ -100,6 +100,7 @@ export async function login(email: string, password: string) {
   const data = await request<{
     access_token: string;
     token_type: string;
+    must_change_password?: boolean;
     user: AuthUser;
   }>("/api/auth/login", {
     method: "POST",
@@ -109,6 +110,16 @@ export async function login(email: string, password: string) {
   setToken(data.access_token);
   setCurrentUser(data.user);
   return data;
+}
+
+export async function changePassword(current_password: string, new_password: string) {
+  return request<{ success?: boolean; message?: string }>(
+    "/api/auth/change-password",
+    {
+      method: "POST",
+      body: JSON.stringify({ current_password, new_password }),
+    },
+  );
 }
 
 // ============= Dashboard =============
@@ -276,6 +287,7 @@ export type LeadTimelineResponse = {
 export const leadsApi = {
   list: (params: ListLeadsParams = {}) =>
     request<LeadListResponse>(`/api/leads${qs(params)}`),
+  mine: () => request<LeadListResponse | Lead[]>(`/api/leads/mine`),
   get: (id: string) => request<Lead>(`/api/leads/${id}`),
   notes: (id: string) =>
     request<LeadNote[] | { data: LeadNote[]; notes?: LeadNote[] }>(
