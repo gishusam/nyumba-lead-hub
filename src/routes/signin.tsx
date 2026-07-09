@@ -31,8 +31,12 @@ function SignInPage() {
     setLoading(true);
     setError(null);
     try {
-      await login(email.trim(), password);
-      navigate({ to: "/" });
+      const res = await login(email.trim(), password);
+      if (res.must_change_password) {
+        navigate({ to: "/change-password" });
+      } else {
+        navigate({ to: "/" });
+      }
     } catch (err) {
       const msg =
         err instanceof ApiError
