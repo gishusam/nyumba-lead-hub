@@ -310,6 +310,14 @@ export const leadsApi = {
       `/api/leads/${id}/notes`,
       { method: "PATCH", body: JSON.stringify({ notes, assigned_to }) },
     ),
+  updateContact: (
+    id: string,
+    payload: { contact_person?: string | null; contact_person_role?: string | null },
+  ) =>
+    request<{ id: string; updated: boolean }>(`/api/leads/${id}/notes`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   summary: (lead_type?: LeadType) =>
     request<LeadsSummary>(`/api/leads/summary${qs({ lead_type })}`),
   timeline: (id: string) =>
