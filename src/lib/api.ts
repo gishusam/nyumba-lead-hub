@@ -196,6 +196,9 @@ export type Lead = {
   review_count?: number | null;
   lead_quality?: string | null;
   signals?: string[] | null;
+  contact_person?: string | null;
+  contact_person_role?: string | null;
+  follow_up_date?: string | null;
 };
 
 export type LeadNote = {
