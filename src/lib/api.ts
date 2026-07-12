@@ -190,7 +190,7 @@ export type Lead = {
   created_at?: string | null;
   updated_at?: string | null;
   ai_score_reason?: string | null;
-  follow_up_date?: string | null;
+  
   contact_attempts?: number | null;
   google_rating?: number | null;
   review_count?: number | null;
