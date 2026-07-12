@@ -7,9 +7,9 @@ import {
   Phone,
   UserPlus,
   Sparkles,
-  ArrowRight,
   Pencil,
   User as UserIcon,
+  Check,
 } from "lucide-react";
 import {
   getCurrentUser,
@@ -64,6 +64,7 @@ export function LeadDetailPanel({
   const open = !!lead;
   const [note, setNote] = useState("");
   const [aiResult, setAiResult] = useState<AiNoteResult | null>(null);
+  const [showAllTimeline, setShowAllTimeline] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +78,7 @@ export function LeadDetailPanel({
   useEffect(() => {
     setNote("");
     setAiResult(null);
+    setShowAllTimeline(false);
   }, [lead?.id]);
 
   const timelineQ = useQuery({
@@ -125,10 +127,21 @@ export function LeadDetailPanel({
     },
   });
 
+  const contactMut = useMutation({
+    mutationFn: (payload: {
+      contact_person?: string | null;
+      contact_person_role?: string | null;
+    }) => leadsApi.updateContact(lead!.id, payload),
+    onSuccess: invalidateLead,
+  });
+
   if (!lead) return null;
 
   const lp: Lead = { ...(lead as Lead), ...(timelineQ.data?.lead ?? {}), ...(detailQ.data ?? {}) };
   const timeline: LeadTimelineItem[] = timelineQ.data?.timeline ?? [];
+  const visibleTimeline =
+    showAllTimeline || timeline.length <= 5 ? timeline : timeline.slice(0, 5);
+  const hiddenCount = timeline.length - visibleTimeline.length;
   const notesRaw = notesQ.data as any;
   const notes: import("@/lib/api").LeadNote[] = Array.isArray(notesRaw)
     ? notesRaw
@@ -176,6 +189,22 @@ export function LeadDetailPanel({
               )}
             </Field>
             <Field label="Area">{lp.area ?? "—"}</Field>
+
+            <InlineEditField
+              label="Contact Person"
+              value={lp.contact_person ?? ""}
+              placeholder="Add contact name"
+              saving={contactMut.isPending}
+              onSave={(v) => contactMut.mutate({ contact_person: v || null })}
+            />
+            <InlineEditField
+              label="Their Role"
+              value={lp.contact_person_role ?? ""}
+              placeholder="Add their role"
+              saving={contactMut.isPending}
+              onSave={(v) => contactMut.mutate({ contact_person_role: v || null })}
+            />
+
             <Field label="Type">{lp.lead_type}</Field>
             <Field label="Assigned">{lp.assigned_to ?? "Unassigned"}</Field>
             <Field label="Website">
@@ -365,11 +394,26 @@ export function LeadDetailPanel({
               No activity yet — be the first to log a call
             </div>
           ) : (
-            <ol className="relative pl-8 space-y-4 before:content-[''] before:absolute before:left-3 before:top-1 before:bottom-1 before:w-0.5 before:bg-success/40">
-              {timeline.map((t, i) => (
-                <TimelineItem key={i} item={t} />
-              ))}
-            </ol>
+            <>
+              <div
+                className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin"
+                style={{ scrollbarWidth: "thin" }}
+              >
+                <ol className="relative pl-8 space-y-5 before:content-[''] before:absolute before:left-[11px] before:top-1 before:bottom-1 before:w-0.5 before:bg-success/40">
+                  {visibleTimeline.map((t, i) => (
+                    <TimelineItem key={i} item={t} />
+                  ))}
+                </ol>
+              </div>
+              {hiddenCount > 0 && (
+                <button
+                  onClick={() => setShowAllTimeline(true)}
+                  className="mt-3 text-xs text-primary hover:underline font-medium"
+                >
+                  Show older activity ({hiddenCount})
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -386,25 +430,86 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function TimelineIcon({
-  variant,
+function InlineEditField({
+  label,
+  value,
+  placeholder,
+  saving,
+  onSave,
 }: {
-  variant: "status" | "note" | "assigned";
+  label: string;
+  value: string;
+  placeholder: string;
+  saving: boolean;
+  onSave: (v: string) => void;
 }) {
-  const style =
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed !== (value ?? "").trim()) onSave(trimmed);
+    setEditing(false);
+  };
+
+  return (
+    <div className="min-w-0">
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      {editing ? (
+        <div className="mt-0.5 flex items-center gap-1">
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") {
+                setDraft(value);
+                setEditing(false);
+              }
+            }}
+            className="h-7 w-full rounded border border-input bg-background px-2 text-sm"
+          />
+          <button
+            onClick={commit}
+            disabled={saving}
+            className="rounded p-1 text-success hover:bg-muted"
+            aria-label="Save"
+          >
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setEditing(true)}
+          className="mt-0.5 inline-flex items-center gap-1 text-sm text-left truncate hover:text-primary group w-full"
+        >
+          <span className={value ? "" : "text-muted-foreground italic"}>
+            {value || placeholder}
+          </span>
+          <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TimelineDot({ variant }: { variant: "status" | "note" | "assigned" }) {
+  const cls =
     variant === "status"
-      ? "bg-success text-white"
+      ? "bg-success"
       : variant === "note"
-        ? "bg-info text-white"
-        : "bg-primary text-white";
-  const Icon =
-    variant === "status" ? ArrowRight : variant === "note" ? Pencil : UserIcon;
+        ? "bg-info"
+        : "bg-primary";
   return (
     <span
-      className={`absolute -left-8 top-0 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-background ${style}`}
-    >
-      <Icon className="h-3 w-3" />
-    </span>
+      className={`absolute -left-[22px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-background ${cls}`}
+    />
   );
 }
 
@@ -416,7 +521,7 @@ function TimelineItem({ item }: { item: LeadTimelineItem }) {
     if (item.event_type === "assigned") {
       return (
         <li className="relative text-sm">
-          <TimelineIcon variant="assigned" />
+          <TimelineDot variant="assigned" />
           <div>
             Lead assigned to <span className="font-semibold">{item.to_value ?? "—"}</span>
           </div>
@@ -424,10 +529,9 @@ function TimelineItem({ item }: { item: LeadTimelineItem }) {
         </li>
       );
     }
-    // status_change or fallback
     return (
       <li className="relative text-sm">
-        <TimelineIcon variant="status" />
+        <TimelineDot variant="status" />
         <div>
           <span className="font-medium">{item.changed_by ?? "Someone"}</span>{" "}
           moved{" "}
@@ -440,10 +544,9 @@ function TimelineItem({ item }: { item: LeadTimelineItem }) {
     );
   }
 
-  // note
   return (
     <li className="relative">
-      <TimelineIcon variant="note" />
+      <TimelineDot variant="note" />
       <div className="rounded-lg border border-border bg-card p-3 shadow-sm relative">
         {item.ai_score_label && (
           <span

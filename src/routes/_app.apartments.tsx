@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { StatusBadgeApi } from "@/components/StatusBadge";
 import { AiScoreBadge, AI_SCORE_OPTIONS } from "@/components/AiScoreBadge";
+import { SourceBadge } from "@/components/SourceBadge";
 import { Button } from "@/components/ui/button";
 import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
 import { ImportCsvDialog } from "@/components/ImportCsvDialog";
@@ -164,6 +165,7 @@ export function LeadsTable({
                 <th className="px-4 py-3 font-medium">Website</th>
                 {showTier && <th className="px-4 py-3 font-medium">Tier</th>}
                 <th className="px-4 py-3 font-medium">AI Score</th>
+                <th className="px-4 py-3 font-medium">Source</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Assigned</th>
                 <th className="px-4 py-3 font-medium" />
@@ -172,21 +174,21 @@ export function LeadsTable({
             <tbody className="divide-y divide-border">
               {query.isLoading && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
                     Loading…
                   </td>
                 </tr>
               )}
               {query.isError && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-destructive">
+                  <td colSpan={11} className="px-4 py-10 text-center text-destructive">
                     Failed to load leads.
                   </td>
                 </tr>
               )}
               {!query.isLoading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
                     No leads found.
                   </td>
                 </tr>
@@ -219,6 +221,7 @@ export function LeadsTable({
                     <td className="px-4 py-3"><TierBadge quality={r.lead_quality} /></td>
                   )}
                   <td className="px-4 py-3"><AiScoreBadge label={r.ai_score_label} score={r.score ?? r.ai_score} /></td>
+                  <td className="px-4 py-3"><SourceBadge source={r.source} /></td>
                   <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground">{r.assigned_to ?? "—"}</td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
