@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { StatusBadgeApi } from "@/components/StatusBadge";
 import { AiScoreBadge, AI_SCORE_OPTIONS } from "@/components/AiScoreBadge";
+import { SourceBadge } from "@/components/SourceBadge";
 import { Button } from "@/components/ui/button";
 import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
 import { ImportCsvDialog } from "@/components/ImportCsvDialog";
