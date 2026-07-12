@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Phone, Search } from "lucide-react";
+import { Phone, Search } from "lucide-react";
 import {
   leadsApi,
   STATUS_LABEL,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { StatusBadgeApi } from "@/components/StatusBadge";
 import { AiScoreBadge } from "@/components/AiScoreBadge";
+import { SourceBadge } from "@/components/SourceBadge";
 import { Button } from "@/components/ui/button";
 import { LeadDetailPanel } from "@/components/LeadDetailPanel";
 
@@ -47,21 +48,25 @@ function MyLeads() {
 
   const raw = query.data;
   const data: Lead[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
+  const sorted = [...data].sort((a, b) => {
+    const ax = a.follow_up_date ? new Date(a.follow_up_date).getTime() : Infinity;
+    const bx = b.follow_up_date ? new Date(b.follow_up_date).getTime() : Infinity;
+    return ax - bx;
+  });
   const filtered = q
-    ? data.filter(
+    ? sorted.filter(
         (r) =>
           r.name.toLowerCase().includes(q.toLowerCase()) ||
-          (r.owner_name ?? "").toLowerCase().includes(q.toLowerCase()) ||
           (r.area ?? "").toLowerCase().includes(q.toLowerCase()),
       )
-    : data;
+    : sorted;
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
       <div>
         <h1 className="text-2xl font-semibold">My Leads</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Leads currently assigned to you.
+          Leads currently assigned to you, sorted by follow-up date.
         </p>
       </div>
 
@@ -86,36 +91,34 @@ function MyLeads() {
             <thead className="bg-muted/40 text-muted-foreground">
               <tr className="text-left">
                 <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Area</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium">Website</th>
                 <th className="px-4 py-3 font-medium">AI Score</th>
                 <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Follow-up</th>
-                <th className="px-4 py-3 font-medium">Last contacted</th>
+                <th className="px-4 py-3 font-medium">Follow-up Date</th>
+                <th className="px-4 py-3 font-medium">Source</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {query.isLoading && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
                     Loading your leads…
                   </td>
                 </tr>
               )}
               {query.isError && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-destructive">
+                  <td colSpan={8} className="px-4 py-10 text-center text-destructive">
                     Failed to load your leads.
                   </td>
                 </tr>
               )}
               {!query.isLoading && !query.isError && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-16 text-center text-muted-foreground">
-                    No leads assigned to you yet — assign leads from the main tables
+                  <td colSpan={8} className="px-4 py-16 text-center text-muted-foreground">
+                    No leads assigned to you yet — go to Apartments or Agencies and click Assign to Me
                   </td>
                 </tr>
               )}
@@ -125,31 +128,18 @@ function MyLeads() {
                   onClick={() => setActiveLead(r)}
                   className="hover:bg-muted/30 cursor-pointer"
                 >
-                  <td className="px-4 py-3 font-medium">{r.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground capitalize">{r.lead_type}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {r.name}
+                    <div className="text-[11px] text-muted-foreground capitalize">{r.lead_type}</div>
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
                   <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.phone ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    {r.website ? (
-                      <a
-                        href={r.website.startsWith("http") ? r.website : `https://${r.website}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-info inline-flex items-center gap-1 hover:underline"
-                      >
-                        {r.website} <ExternalLink className="h-3 w-3" />
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
                   <td className="px-4 py-3">
                     <AiScoreBadge label={r.ai_score_label} score={r.score ?? r.ai_score} />
                   </td>
                   <td className="px-4 py-3"><StatusBadgeApi status={r.status} /></td>
                   <td className="px-4 py-3 text-muted-foreground tabular-nums">{fmtDate(r.follow_up_date)}</td>
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{fmtDate(r.last_contacted)}</td>
+                  <td className="px-4 py-3"><SourceBadge source={r.source} /></td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       {r.phone && (
