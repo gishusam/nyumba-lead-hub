@@ -174,21 +174,21 @@ export function LeadsTable({
             <tbody className="divide-y divide-border">
               {query.isLoading && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
                     Loading…
                   </td>
                 </tr>
               )}
               {query.isError && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-destructive">
+                  <td colSpan={11} className="px-4 py-10 text-center text-destructive">
                     Failed to load leads.
                   </td>
                 </tr>
               )}
               {!query.isLoading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
                     No leads found.
                   </td>
                 </tr>
