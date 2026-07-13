@@ -146,6 +146,25 @@ export function ImportCsvDialog({
   );
 }
 
+function pickRecords(report: LeadImportReport, key: TabKey): any[] {
+  const r: any = report;
+  const recs = r.records ?? {};
+  const candidates: Record<TabKey, string[]> = {
+    inserted: ["inserted", "imported", "created", "new"],
+    duplicates: ["duplicates", "duplicate", "skipped", "skipped_duplicates", "duplicated"],
+    rejected: ["rejected", "invalid", "no_contact", "dropped"],
+    errors: ["errors", "failed", "error_rows"],
+  };
+  for (const k of candidates[key]) {
+    if (Array.isArray(recs[k]) && recs[k].length) return recs[k];
+    if (Array.isArray(r[k]) && r[k].length && k !== key) return r[k];
+    const flat = r[`${k}_records`] ?? r[`${k}_rows`];
+    if (Array.isArray(flat) && flat.length) return flat;
+  }
+  // fallback empty
+  return Array.isArray(recs[key]) ? recs[key] : [];
+}
+
 function ResultsPanel({
   report,
   tab,
@@ -155,7 +174,6 @@ function ResultsPanel({
   tab: TabKey;
   setTab: (t: TabKey) => void;
 }) {
-  const recs = report.records ?? {};
   const tabs: Array<{
     key: TabKey;
     label: string;
@@ -174,6 +192,7 @@ function ResultsPanel({
   }>;
 
   const activeTab = tabs.find((t) => t.key === tab) ? tab : tabs[0]?.key ?? "inserted";
+  const activeRows = pickRecords(report, activeTab);
 
   return (
     <div className="space-y-4">
@@ -224,19 +243,22 @@ function ResultsPanel({
           </div>
 
           <div className="max-h-[50vh] overflow-auto rounded-lg border border-border">
-            {activeTab === "inserted" && (
-              <InsertedTable rows={recs.inserted ?? []} />
-            )}
-            {activeTab === "duplicates" && (
-              <IssueTable rows={recs.duplicates ?? []} reasonLabel="Reason" />
-            )}
-            {activeTab === "rejected" && (
-              <IssueTable rows={recs.rejected ?? []} reasonLabel="Reason" />
-            )}
-            {activeTab === "errors" && (
-              <IssueTable rows={recs.errors ?? []} reasonLabel="Error" />
-            )}
+            {activeTab === "inserted" && <InsertedTable rows={activeRows as LeadImportInsertedRecord[]} />}
+            {activeTab === "duplicates" && <IssueTable rows={activeRows as LeadImportIssueRecord[]} reasonLabel="Reason" />}
+            {activeTab === "rejected" && <IssueTable rows={activeRows as LeadImportIssueRecord[]} reasonLabel="Reason" />}
+            {activeTab === "errors" && <IssueTable rows={activeRows as LeadImportIssueRecord[]} reasonLabel="Error" />}
           </div>
+
+          {activeRows.length === 0 && (
+            <details className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs">
+              <summary className="cursor-pointer font-medium text-amber-800">
+                Backend returned {tabs.find(t => t.key === activeTab)?.count} {activeTab} but no per-row details. Click to inspect raw response.
+              </summary>
+              <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-[11px] text-amber-900">
+                {JSON.stringify(report, null, 2)}
+              </pre>
+            </details>
+          )}
         </>
       )}
     </div>

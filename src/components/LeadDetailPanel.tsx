@@ -152,9 +152,10 @@ export function LeadDetailPanel({
     <div className="fixed inset-0 z-50" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-background border-l border-border shadow-xl flex flex-col animate-in slide-in-from-right duration-200"
+        className="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-background border-l border-border shadow-xl flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+       <div className="flex-1 overflow-y-auto">
         {/* Top: profile */}
         <div className="px-5 py-4 border-b border-border">
           <div className="flex items-start justify-between gap-3">
@@ -385,7 +386,7 @@ export function LeadDetailPanel({
 
 
         {/* Bottom: timeline */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="px-5 py-4">
           <div className="text-sm font-medium mb-3">Activity</div>
           {timelineQ.isLoading ? (
             <div className="text-sm text-muted-foreground">Loading timeline…</div>
@@ -395,16 +396,11 @@ export function LeadDetailPanel({
             </div>
           ) : (
             <>
-              <div
-                className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin"
-                style={{ scrollbarWidth: "thin" }}
-              >
-                <ol className="relative pl-8 space-y-5 before:content-[''] before:absolute before:left-[11px] before:top-1 before:bottom-1 before:w-0.5 before:bg-success/40">
-                  {visibleTimeline.map((t, i) => (
-                    <TimelineItem key={i} item={t} />
-                  ))}
-                </ol>
-              </div>
+              <ol className="relative pl-8 space-y-5 before:content-[''] before:absolute before:left-[11px] before:top-1 before:bottom-1 before:w-0.5 before:bg-success/40">
+                {visibleTimeline.map((t, i) => (
+                  <TimelineItem key={i} item={t} />
+                ))}
+              </ol>
               {hiddenCount > 0 && (
                 <button
                   onClick={() => setShowAllTimeline(true)}
@@ -416,6 +412,7 @@ export function LeadDetailPanel({
             </>
           )}
         </div>
+       </div>
       </div>
     </div>
   );
