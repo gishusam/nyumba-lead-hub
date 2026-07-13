@@ -248,12 +248,34 @@ export type LeadsSummary = {
   by_type?: Record<string, Partial<LeadsSummary>>;
 };
 
+export type LeadImportInsertedRecord = {
+  row: number;
+  name: string;
+  area?: string | null;
+  phone?: string | null;
+  lead_type?: string | null;
+};
+export type LeadImportIssueRecord = {
+  row: number;
+  name: string;
+  reason: string;
+};
 export type LeadImportReport = {
+  total_rows?: number;
   inserted: number;
+  updated?: number;
   duplicates: number;
   rejected: number;
   errors: number;
+  summary?: string;
   messages?: string[];
+  records?: {
+    inserted?: LeadImportInsertedRecord[];
+    updated?: LeadImportInsertedRecord[];
+    duplicates?: LeadImportIssueRecord[];
+    rejected?: LeadImportIssueRecord[];
+    errors?: LeadImportIssueRecord[];
+  };
 };
 
 export type LeadTimelineItem = {
