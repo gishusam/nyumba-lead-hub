@@ -166,7 +166,12 @@ function ResultsPanel({
     { key: "duplicates", label: "Duplicates", count: report.duplicates ?? 0, tone: "warning" },
     { key: "rejected", label: "Rejected", count: report.rejected ?? 0, tone: "destructive" },
     { key: "errors", label: "Errors", count: report.errors ?? 0, tone: "muted" },
-  ].filter((t) => t.count > 0);
+  ].filter((t) => t.count > 0) as Array<{
+    key: TabKey;
+    label: string;
+    count: number;
+    tone: "success" | "warning" | "destructive" | "muted";
+  }>;
 
   const activeTab = tabs.find((t) => t.key === tab) ? tab : tabs[0]?.key ?? "inserted";
 
