@@ -152,9 +152,10 @@ export function LeadDetailPanel({
     <div className="fixed inset-0 z-50" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-background border-l border-border shadow-xl flex flex-col animate-in slide-in-from-right duration-200"
+        className="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-background border-l border-border shadow-xl flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+       <div className="flex-1 overflow-y-auto">
         {/* Top: profile */}
         <div className="px-5 py-4 border-b border-border">
           <div className="flex items-start justify-between gap-3">
