@@ -3,7 +3,7 @@
 
 export const API_BASE_URL =
   (import.meta as any).env?.VITE_API_BASE_URL ||
-  "https://salesintelligence-production-8d1d.up.railway.app";
+  "https://sales-intelligence-api-2c4dpa66cq-ew.a.run.app";
 
 const TOKEN_KEY = "nzetu_token";
 const USER_KEY = "nzetu_user";
