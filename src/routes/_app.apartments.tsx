@@ -282,29 +282,33 @@ export function LeadsTable({
           </table>
         </div>
 
-        {query.data && query.data.pages > 1 && (
+        {query.data && (
           <div className="flex items-center justify-between p-4 border-t border-border text-sm">
             <div className="text-muted-foreground">
-              Page {query.data.page} of {query.data.pages} · {query.data.total} total
+              {query.data.total > 0
+                ? `Page ${query.data.page} of ${query.data.pages} · ${query.data.total} total`
+                : "No results"}
             </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Prev
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={page >= (query.data.pages ?? 1)}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
+            {query.data.pages > 1 && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page >= (query.data.pages ?? 1)}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
