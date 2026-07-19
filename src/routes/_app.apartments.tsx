@@ -4,6 +4,7 @@ import { ExternalLink, Phone, Search, Upload } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   leadsApi,
+  dashboardApi,
   STATUS_LABEL,
   STATUS_OPTIONS,
   type Lead,
@@ -13,7 +14,7 @@ import {
 } from "@/lib/api";
 import { StatusBadgeApi } from "@/components/StatusBadge";
 import { AiScoreBadge, AI_SCORE_OPTIONS } from "@/components/AiScoreBadge";
-import { SourceBadge } from "@/components/SourceBadge";
+import { SourceBadge, SOURCE_LABELS } from "@/components/SourceBadge";
 import { Button } from "@/components/ui/button";
 import { LeadsSummaryStrip } from "@/components/LeadsSummaryStrip";
 import { ImportCsvDialog } from "@/components/ImportCsvDialog";
@@ -42,6 +43,7 @@ export function LeadsTable({
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [area, setArea] = useState("");
+  const [source, setSource] = useState("");
   const [status, setStatus] = useState<"" | LeadStatusApi>("");
   const [aiScore, setAiScore] = useState<"" | AiScoreLabel>("");
   const [page, setPage] = useState(1);
@@ -49,12 +51,25 @@ export function LeadsTable({
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
 
   const limit = 20;
+
+  // Fetch all areas for this lead type from the backend (not just current page)
+  const areasQuery = useQuery({
+    queryKey: ["areas", leadType],
+    queryFn: () => dashboardApi.byArea(leadType),
+    staleTime: 5 * 60 * 1000,
+  });
+  const allAreas = (areasQuery.data ?? [])
+    .map((r) => r.area)
+    .filter(Boolean)
+    .sort() as string[];
+
   const query = useQuery({
-    queryKey: ["leads", leadType, { area, status, aiScore, page }],
+    queryKey: ["leads", leadType, { area, source, status, aiScore, page }],
     queryFn: () =>
       leadsApi.list({
         lead_type: leadType,
         area: area || undefined,
+        source: source || undefined,
         status: status || undefined,
         ai_score: aiScore || undefined,
         page,
@@ -79,8 +94,6 @@ export function LeadsTable({
           (r.owner_name ?? "").toLowerCase().includes(q.toLowerCase()),
       )
     : data;
-
-  const areas = Array.from(new Set(data.map((r) => r.area).filter(Boolean))) as string[];
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
@@ -117,8 +130,21 @@ export function LeadsTable({
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
           >
             <option value="">All areas</option>
-            {areas.map((a) => (
-              <option key={a}>{a}</option>
+            {allAreas.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+          <select
+            value={source}
+            onChange={(e) => {
+              setSource(e.target.value);
+              setPage(1);
+            }}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            <option value="">All sources</option>
+            {Object.entries(SOURCE_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
             ))}
           </select>
           <select

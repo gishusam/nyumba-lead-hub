@@ -1,4 +1,4 @@
-const SOURCE_LABELS: Record<string, string> = {
+export const SOURCE_LABELS: Record<string, string> = {
   google_maps: "Scraped · Maps",
   apartment_discovery: "Scraped · Maps",
   kpda_directory: "Scraped · Directory",

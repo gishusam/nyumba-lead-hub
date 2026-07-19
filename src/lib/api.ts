@@ -140,8 +140,10 @@ export const dashboardApi = {
     request<Array<{ type: string; count: number }>>("/api/dashboard/by-source"),
   funnel: () =>
     request<Array<{ status: string; count: number }>>("/api/dashboard/funnel"),
-  byArea: () =>
-    request<Array<{ area: string; count: number }>>("/api/dashboard/by-area"),
+  byArea: (lead_type?: string) =>
+    request<Array<{ area: string; count: number }>>(
+      `/api/dashboard/by-area${lead_type ? `?lead_type=${lead_type}` : ""}`,
+    ),
   activity: () =>
     request<
       Array<{
@@ -225,6 +227,7 @@ export type ListLeadsParams = {
   lead_type?: LeadType;
   status?: LeadStatusApi;
   area?: string;
+  source?: string;
   assigned_to?: string;
   ai_score?: AiScoreLabel | string;
   page?: number;
