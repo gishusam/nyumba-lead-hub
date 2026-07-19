@@ -25,6 +25,8 @@ export default defineConfig({
           target: "https://sales-intelligence-api-2c4dpa66cq-ew.a.run.app",
           changeOrigin: true,
           secure: true,
+          timeout: 25_000,        // 25 s socket timeout
+          proxyTimeout: 25_000,   // 25 s for the upstream response
         },
       },
     },

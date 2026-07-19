@@ -60,7 +60,7 @@ async function request<T>(
   path: string,
   init: RequestInit & { auth?: boolean } = {},
 ): Promise<T> {
-  const { auth = true, headers, ...rest } = init;
+  const { auth = true, headers, signal: callerSignal, ...rest } = init;
   const finalHeaders: Record<string, string> = {
     "Content-Type": "application/json",
     ...(headers as Record<string, string> | undefined),
@@ -70,8 +70,15 @@ async function request<T>(
     if (token) finalHeaders["Authorization"] = `Bearer ${token}`;
   }
 
+  // 20-second timeout per request; caller can pass a tighter signal
+  const timeoutSignal = AbortSignal.timeout(20_000);
+  const signal = callerSignal
+    ? AbortSignal.any([callerSignal, timeoutSignal])
+    : timeoutSignal;
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
+    signal,
     headers: finalHeaders,
   });
 

@@ -64,20 +64,45 @@ export function LeadsTable({
     .sort() as string[];
 
   // The backend does not support filtering by `source`, so when a source filter
-  // is active we fetch all records for the lead type and paginate client-side.
+  // is active we fetch all pages in parallel (50 records each) and paginate
+  // client-side. This avoids one huge slow request.
+  const PAGE_SIZE = 50; // per-page batch when fetching all
   const sourceActive = source !== "";
   const query = useQuery({
     queryKey: ["leads", leadType, { area, source, status, aiScore, page: sourceActive ? "all" : page }],
-    queryFn: () =>
-      leadsApi.list({
+    staleTime: sourceActive ? 2 * 60 * 1000 : 0,
+    retry: 1,
+    queryFn: async () => {
+      const baseParams = {
         lead_type: leadType,
         area: area || undefined,
-        // omit source — backend ignores it; we filter client-side below
         status: status || undefined,
         ai_score: aiScore || undefined,
-        page: sourceActive ? 1 : page,
-        limit: sourceActive ? 2000 : limit,
-      }),
+      };
+
+      if (!sourceActive) {
+        // Normal server-side paginated fetch
+        return leadsApi.list({ ...baseParams, page, limit });
+      }
+
+      // Step 1: fetch page 1 to learn the total
+      const first = await leadsApi.list({ ...baseParams, page: 1, limit: PAGE_SIZE });
+      if (first.pages <= 1) return first;
+
+      // Step 2: fetch remaining pages in parallel
+      const pageNums = Array.from({ length: first.pages - 1 }, (_, i) => i + 2);
+      const rest = await Promise.all(
+        pageNums.map((p) => leadsApi.list({ ...baseParams, page: p, limit: PAGE_SIZE })),
+      );
+
+      // Combine and return as a single synthetic response
+      return {
+        ...first,
+        data: [...first.data, ...rest.flatMap((r) => r.data)],
+        page: 1,
+        pages: 1,
+      };
+    },
   });
 
   const updateStatus = useMutation({
