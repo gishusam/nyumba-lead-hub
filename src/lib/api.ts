@@ -255,9 +255,14 @@ export type LeadImportInsertedRecord = {
   phone?: string | null;
   lead_type?: string | null;
 };
-export type LeadImportIssueRecord = {
+export type LeadImportUpdatedRecord = {
   row: number;
   name: string;
+  what_changed?: string | null;
+};
+export type LeadImportIssueRecord = {
+  row: number;
+  name?: string | null;
   reason: string;
 };
 export type LeadImportReport = {
@@ -269,9 +274,18 @@ export type LeadImportReport = {
   errors: number;
   summary?: string;
   messages?: string[];
+  /** Canonical location — backend nests per-row details here */
+  audit?: {
+    inserted?: LeadImportInsertedRecord[];
+    updated?: LeadImportUpdatedRecord[];
+    duplicates?: LeadImportIssueRecord[];
+    rejected?: LeadImportIssueRecord[];
+    errors?: LeadImportIssueRecord[];
+  };
+  /** Legacy fallback location some versions of the backend use */
   records?: {
     inserted?: LeadImportInsertedRecord[];
-    updated?: LeadImportInsertedRecord[];
+    updated?: LeadImportUpdatedRecord[];
     duplicates?: LeadImportIssueRecord[];
     rejected?: LeadImportIssueRecord[];
     errors?: LeadImportIssueRecord[];
