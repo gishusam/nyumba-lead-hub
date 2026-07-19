@@ -63,17 +63,20 @@ export function LeadsTable({
     .filter(Boolean)
     .sort() as string[];
 
+  // The backend does not support filtering by `source`, so when a source filter
+  // is active we fetch all records for the lead type and paginate client-side.
+  const sourceActive = source !== "";
   const query = useQuery({
-    queryKey: ["leads", leadType, { area, source, status, aiScore, page }],
+    queryKey: ["leads", leadType, { area, source, status, aiScore, page: sourceActive ? "all" : page }],
     queryFn: () =>
       leadsApi.list({
         lead_type: leadType,
         area: area || undefined,
-        source: source || undefined,
+        // omit source — backend ignores it; we filter client-side below
         status: status || undefined,
         ai_score: aiScore || undefined,
-        page,
-        limit,
+        page: sourceActive ? 1 : page,
+        limit: sourceActive ? 2000 : limit,
       }),
   });
 
@@ -87,13 +90,28 @@ export function LeadsTable({
   });
 
   const data = query.data?.data ?? [];
-  const filtered = q
-    ? data.filter(
+
+  // Apply client-side source filter (backend doesn't support it server-side)
+  const sourceFiltered = sourceActive
+    ? data.filter((r) => r.source === source)
+    : data;
+
+  // Apply client-side text search
+  const textFiltered = q
+    ? sourceFiltered.filter(
         (r) =>
           r.name.toLowerCase().includes(q.toLowerCase()) ||
           (r.owner_name ?? "").toLowerCase().includes(q.toLowerCase()),
       )
-    : data;
+    : sourceFiltered;
+
+  // When source filter is active, derive pagination from client-side filtered set
+  const clientTotal = sourceActive ? textFiltered.length : (query.data?.total ?? 0);
+  const clientPages = sourceActive ? Math.max(1, Math.ceil(textFiltered.length / limit)) : (query.data?.pages ?? 1);
+  const clientPage  = sourceActive ? page : (query.data?.page ?? 1);
+  const filtered    = sourceActive
+    ? textFiltered.slice((page - 1) * limit, page * limit)
+    : textFiltered;
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
@@ -285,11 +303,11 @@ export function LeadsTable({
         {query.data && (
           <div className="flex items-center justify-between p-4 border-t border-border text-sm">
             <div className="text-muted-foreground">
-              {query.data.total > 0
-                ? `Page ${query.data.page} of ${query.data.pages} · ${query.data.total} total`
+              {clientTotal > 0
+                ? `Page ${clientPage} of ${clientPages} · ${clientTotal} total`
                 : "No results"}
             </div>
-            {query.data.pages > 1 && (
+            {clientPages > 1 && (
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -302,7 +320,7 @@ export function LeadsTable({
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={page >= (query.data.pages ?? 1)}
+                  disabled={page >= clientPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
                   Next
