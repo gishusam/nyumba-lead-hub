@@ -17,6 +17,16 @@ export default defineConfig({
       port: 5000,
       host: "0.0.0.0",
       allowedHosts: true,
+      // Proxy /api to the backend so CORS is never an issue in dev.
+      // Set VITE_API_BASE_URL="" to activate; the proxy handles auth
+      // headers transparently.
+      proxy: {
+        "/api": {
+          target: "https://sales-intelligence-api-2c4dpa66cq-ew.a.run.app",
+          changeOrigin: true,
+          secure: true,
+        },
+      },
     },
   },
 });

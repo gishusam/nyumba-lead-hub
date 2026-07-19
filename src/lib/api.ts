@@ -1,8 +1,10 @@
 // Browser-only API client for the Nyumba Zetu FastAPI backend.
 // Reads token from localStorage and attaches it as Bearer.
 
-export const API_BASE_URL =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
+// Empty string means "use Vite proxy" (dev on Replit).
+// Explicit URL means "call backend directly" (production / Vercel).
+export const API_BASE_URL: string =
+  (import.meta as any).env?.VITE_API_BASE_URL ??
   "https://sales-intelligence-api-2c4dpa66cq-ew.a.run.app";
 
 const TOKEN_KEY = "nzetu_token";
