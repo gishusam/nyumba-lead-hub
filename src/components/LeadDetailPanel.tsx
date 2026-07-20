@@ -60,7 +60,9 @@ export function LeadDetailPanel({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
-  const me = getCurrentUser();
+  // Read from localStorage only on the client to avoid SSR hydration mismatch
+  const [me, setMe] = useState<import("@/lib/api").AuthUser | null>(null);
+  useEffect(() => { setMe(getCurrentUser()); }, []);
   const open = !!lead;
   const [note, setNote] = useState("");
   const [aiResult, setAiResult] = useState<AiNoteResult | null>(null);

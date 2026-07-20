@@ -30,11 +30,16 @@ function fmtDate(d?: string | null) {
 function MyLeads() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
+  const limit = 20;
 
   const query = useQuery({
-    queryKey: ["leads", "mine"],
-    queryFn: () => leadsApi.mine(),
+    queryKey: ["leads", "mine", page],
+    queryFn: () => leadsApi.mine(page, limit),
+    staleTime: 0,
+    retry: 1,
+    refetchOnWindowFocus: true,
   });
 
   const updateStatus = useMutation({
@@ -47,7 +52,11 @@ function MyLeads() {
   });
 
   const raw = query.data;
+  // Backend may return a paginated envelope or a raw array
   const data: Lead[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
+  const totalPages: number = Array.isArray(raw) ? 1 : (raw?.pages ?? 1);
+  const totalCount: number = Array.isArray(raw) ? data.length : (raw?.total ?? data.length);
+
   const sorted = [...data].sort((a, b) => {
     const ax = a.follow_up_date ? new Date(a.follow_up_date).getTime() : Infinity;
     const bx = b.follow_up_date ? new Date(b.follow_up_date).getTime() : Infinity;
@@ -87,7 +96,7 @@ function MyLeads() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-busy={query.isLoading}>
             <thead className="bg-muted/40 text-muted-foreground">
               <tr className="text-left">
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -171,6 +180,37 @@ function MyLeads() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination footer */}
+        {(totalPages > 1 || totalCount > 0) && (
+          <div className="flex items-center justify-between p-4 border-t border-border text-sm">
+            <div className="text-muted-foreground">
+              {totalCount > 0
+                ? `Page ${page} of ${totalPages} · ${totalCount} total`
+                : "No results"}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <LeadDetailPanel lead={activeLead} onClose={() => setActiveLead(null)} />

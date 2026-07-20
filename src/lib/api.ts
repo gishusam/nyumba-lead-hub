@@ -338,7 +338,8 @@ export type LeadTimelineResponse = {
 export const leadsApi = {
   list: (params: ListLeadsParams = {}) =>
     request<LeadListResponse>(`/api/leads${qs(params)}`),
-  mine: () => request<LeadListResponse | Lead[]>(`/api/leads/mine`),
+  mine: (page = 1, limit = 20) =>
+    request<LeadListResponse | Lead[]>(`/api/leads/mine${qs({ page, limit })}`),
   get: (id: string) => request<Lead>(`/api/leads/${id}`),
   notes: (id: string) =>
     request<LeadNote[] | { data: LeadNote[]; notes?: LeadNote[] }>(
