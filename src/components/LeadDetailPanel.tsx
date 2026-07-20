@@ -5,11 +5,20 @@ import {
   ExternalLink,
   Loader2,
   Phone,
+  Mail,
+  MapPin,
+  Globe,
   UserPlus,
   Sparkles,
   Pencil,
-  User as UserIcon,
   Check,
+  Calendar,
+  Clock,
+  Star,
+  User,
+  Tag,
+  MessageSquarePlus,
+  Activity,
 } from "lucide-react";
 import {
   getCurrentUser,
@@ -18,11 +27,13 @@ import {
   STATUS_OPTIONS,
   type AiNoteResult,
   type Lead,
+  type LeadNote,
   type LeadStatusApi,
   type LeadTimelineItem,
 } from "@/lib/api";
-import { ScorePill } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+
+/* ─── helpers ──────────────────────────────────────────────── */
 
 function relativeTime(iso?: string | null) {
   if (!iso) return "";
@@ -30,27 +41,70 @@ function relativeTime(iso?: string | null) {
   if (Number.isNaN(t)) return "";
   const diff = Math.round((Date.now() - t) / 1000);
   if (diff < 45) return "just now";
-  if (diff < 90) return "1 minute ago";
-  if (diff < 3600) return `${Math.round(diff / 60)} minutes ago`;
+  if (diff < 90) return "1 min ago";
+  if (diff < 3600) return `${Math.round(diff / 60)} min ago`;
   if (diff < 7200) return "1 hour ago";
-  if (diff < 86400) return `${Math.round(diff / 3600)} hours ago`;
-  if (diff < 172800) return "1 day ago";
-  if (diff < 2592000) return `${Math.round(diff / 86400)} days ago`;
+  if (diff < 86400) return `${Math.round(diff / 3600)}h ago`;
+  if (diff < 172800) return "yesterday";
+  if (diff < 2592000) return `${Math.round(diff / 86400)}d ago`;
   return new Date(iso).toLocaleDateString();
 }
 
-const AI_LABEL_STYLES: Record<string, string> = {
-  LOW_HANGING_FRUIT: "bg-success/15 text-success border-success/30",
-  WARM_PROSPECT: "bg-info/10 text-info border-info/20",
-  EXECUTIVE_LEAD: "bg-primary/10 text-primary border-primary/20",
-  NURTURE: "bg-warning/15 text-warning-foreground border-warning/30",
-  NOT_QUALIFIED: "bg-muted text-muted-foreground border-border",
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+const AI_LABEL_META: Record<string, { cls: string; dot: string; label: string }> = {
+  LOW_HANGING_FRUIT: {
+    cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    dot: "bg-emerald-500",
+    label: "Low Hanging Fruit",
+  },
+  WARM_PROSPECT: {
+    cls: "bg-sky-50 text-sky-700 border-sky-200",
+    dot: "bg-sky-500",
+    label: "Warm Prospect",
+  },
+  EXECUTIVE_LEAD: {
+    cls: "bg-violet-50 text-violet-700 border-violet-200",
+    dot: "bg-violet-500",
+    label: "Executive Lead",
+  },
+  NURTURE: {
+    cls: "bg-amber-50 text-amber-700 border-amber-200",
+    dot: "bg-amber-400",
+    label: "Nurture",
+  },
+  NOT_QUALIFIED: {
+    cls: "bg-zinc-100 text-zinc-500 border-zinc-200",
+    dot: "bg-zinc-400",
+    label: "Not Qualified",
+  },
 };
 
-function aiLabelClasses(label?: string | null) {
-  if (!label) return AI_LABEL_STYLES.NURTURE;
-  return AI_LABEL_STYLES[label] ?? "bg-primary/10 text-primary border-primary/20";
+function aiMeta(label?: string | null) {
+  if (!label) return AI_LABEL_META.NURTURE;
+  return AI_LABEL_META[label] ?? {
+    cls: "bg-primary/10 text-primary border-primary/20",
+    dot: "bg-primary",
+    label,
+  };
 }
+
+const STATUS_DOT: Record<string, string> = {
+  new: "bg-zinc-400",
+  contacted: "bg-sky-500",
+  demo_booked: "bg-violet-500",
+  won: "bg-emerald-500",
+  lost: "bg-rose-400",
+  not_interested: "bg-zinc-300",
+};
+
+/* ─── main component ────────────────────────────────────────── */
 
 export function LeadDetailPanel({
   lead,
@@ -60,27 +114,27 @@ export function LeadDetailPanel({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
-  // Read from localStorage only on the client to avoid SSR hydration mismatch
   const [me, setMe] = useState<import("@/lib/api").AuthUser | null>(null);
   useEffect(() => { setMe(getCurrentUser()); }, []);
+
   const open = !!lead;
   const [note, setNote] = useState("");
   const [aiResult, setAiResult] = useState<AiNoteResult | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "activity">("overview");
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
   }, [open, onClose]);
 
   useEffect(() => {
     setNote("");
     setAiResult(null);
     setShowAllTimeline(false);
+    setActiveTab("overview");
   }, [lead?.id]);
 
   const timelineQ = useQuery({
@@ -88,13 +142,11 @@ export function LeadDetailPanel({
     queryFn: () => leadsApi.timeline(lead!.id),
     enabled: !!lead?.id,
   });
-
   const detailQ = useQuery({
     queryKey: ["leads", "detail", lead?.id],
     queryFn: () => leadsApi.get(lead!.id),
     enabled: !!lead?.id,
   });
-
   const notesQ = useQuery({
     queryKey: ["leads", "notes", lead?.id],
     queryFn: () => leadsApi.notes(lead!.id),
@@ -110,30 +162,20 @@ export function LeadDetailPanel({
   };
 
   const statusMut = useMutation({
-    mutationFn: (status: LeadStatusApi) =>
-      leadsApi.updateStatus(lead!.id, status),
+    mutationFn: (status: LeadStatusApi) => leadsApi.updateStatus(lead!.id, status),
     onSuccess: invalidateLead,
   });
-
   const assignMut = useMutation({
     mutationFn: () => leadsApi.assign(lead!.id, me?.name ?? me?.id),
     onSuccess: invalidateLead,
   });
-
   const noteMut = useMutation({
     mutationFn: () => leadsApi.addNote(lead!.id, note.trim(), me?.name),
-    onSuccess: (data) => {
-      setNote("");
-      setAiResult(data ?? null);
-      invalidateLead();
-    },
+    onSuccess: (data) => { setNote(""); setAiResult(data ?? null); invalidateLead(); },
   });
-
   const contactMut = useMutation({
-    mutationFn: (payload: {
-      contact_person?: string | null;
-      contact_person_role?: string | null;
-    }) => leadsApi.updateContact(lead!.id, payload),
+    mutationFn: (payload: { contact_person?: string | null; contact_person_role?: string | null }) =>
+      leadsApi.updateContact(lead!.id, payload),
     onSuccess: invalidateLead,
   });
 
@@ -141,295 +183,398 @@ export function LeadDetailPanel({
 
   const lp: Lead = { ...(lead as Lead), ...(timelineQ.data?.lead ?? {}), ...(detailQ.data ?? {}) };
   const timeline: LeadTimelineItem[] = timelineQ.data?.timeline ?? [];
-  const visibleTimeline =
-    showAllTimeline || timeline.length <= 5 ? timeline : timeline.slice(0, 5);
+  const visibleTimeline = showAllTimeline || timeline.length <= 6 ? timeline : timeline.slice(0, 6);
   const hiddenCount = timeline.length - visibleTimeline.length;
   const notesRaw = notesQ.data as any;
-  const notes: import("@/lib/api").LeadNote[] = Array.isArray(notesRaw)
+  const notes: LeadNote[] = Array.isArray(notesRaw)
     ? notesRaw
     : (notesRaw?.data ?? notesRaw?.notes ?? []);
 
+  const score = lp.score ?? (lp as any).ai_score ?? 0;
+  const scoreLabel = (lp as any).ai_score_label as string | undefined;
+  const meta = aiMeta(scoreLabel);
+  const scoreColor =
+    score >= 80 ? "text-emerald-600" : score >= 60 ? "text-amber-600" : "text-zinc-500";
+  const avatarBg =
+    score >= 80 ? "from-emerald-500 to-teal-600" :
+    score >= 60 ? "from-amber-400 to-orange-500" :
+    "from-zinc-400 to-zinc-500";
 
   return (
-    <div className="fixed inset-0 z-50" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
+    <div className="fixed inset-0 z-50 flex items-stretch justify-end" onClick={onClose}>
+      {/* backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+
+      {/* panel */}
       <div
-        className="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-background border-l border-border shadow-xl flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden"
+        className="relative flex flex-col w-full md:w-[780px] lg:w-[860px] h-full bg-background shadow-2xl animate-in slide-in-from-right duration-250 ease-out"
         onClick={(e) => e.stopPropagation()}
       >
-       <div className="flex-1 overflow-y-auto">
-        {/* Top: profile */}
-        <div className="px-5 py-4 border-b border-border">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-lg leading-tight truncate">{lp.name}</h3>
-              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                <ScorePill score={lp.score ?? 0} />
-                {(lp as any).ai_score_label && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-2 py-0.5 text-xs font-medium">
-                    <Sparkles className="h-3 w-3" /> {(lp as any).ai_score_label}
+        {/* ── Hero header ── */}
+        <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 pt-5 pb-6 shrink-0">
+          {/* close */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 rounded-full p-1.5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <div className="flex items-start gap-4">
+            {/* initials avatar */}
+            <div className={`shrink-0 h-14 w-14 rounded-2xl bg-gradient-to-br ${avatarBg} flex items-center justify-center text-white font-bold text-xl shadow-lg`}>
+              {initials(lp.name)}
+            </div>
+
+            <div className="min-w-0 flex-1 pr-8">
+              <h2 className="text-xl font-semibold text-white leading-tight truncate">{lp.name}</h2>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                {/* lead type */}
+                <span className="inline-flex items-center gap-1 rounded-md bg-white/10 text-white/80 px-2 py-0.5 text-xs font-medium capitalize">
+                  <Tag className="h-3 w-3" />
+                  {lp.lead_type}
+                </span>
+                {/* area */}
+                {lp.area && (
+                  <span className="inline-flex items-center gap-1 text-white/60 text-xs">
+                    <MapPin className="h-3 w-3" /> {lp.area}
+                  </span>
+                )}
+                {/* ai label */}
+                {scoreLabel && (
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${meta.cls}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                    {meta.label}
                   </span>
                 )}
               </div>
+
+              {/* score bar */}
+              <div className="mt-3 flex items-center gap-3">
+                <span className={`text-2xl font-bold tabular-nums ${scoreColor.replace("text-", "text-")} text-white`}>
+                  {score}
+                </span>
+                <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      score >= 80 ? "bg-emerald-400" : score >= 60 ? "bg-amber-400" : "bg-zinc-400"
+                    }`}
+                    style={{ width: `${Math.min(100, score)}%` }}
+                  />
+                </div>
+                <span className="text-xs text-white/40 tabular-nums">/ 100</span>
+              </div>
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-md p-1.5 hover:bg-muted text-muted-foreground"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <Field label="Phone">
-              {lp.phone ? (
-                <a href={`tel:${lp.phone}`} className="text-info inline-flex items-center gap-1 hover:underline">
-                  <Phone className="h-3 w-3" /> {lp.phone}
-                </a>
-              ) : (
-                "—"
-              )}
-            </Field>
-            <Field label="Area">{lp.area ?? "—"}</Field>
-
-            <InlineEditField
-              label="Contact Person"
-              value={lp.contact_person ?? ""}
-              placeholder="Add contact name"
-              saving={contactMut.isPending}
-              onSave={(v) => contactMut.mutate({ contact_person: v || null })}
-            />
-            <InlineEditField
-              label="Their Role"
-              value={lp.contact_person_role ?? ""}
-              placeholder="Add their role"
-              saving={contactMut.isPending}
-              onSave={(v) => contactMut.mutate({ contact_person_role: v || null })}
-            />
-
-            <Field label="Type">{lp.lead_type}</Field>
-            <Field label="Assigned">{lp.assigned_to ?? "Unassigned"}</Field>
-            <Field label="Website">
-              {lp.website ? (
-                <a
-                  href={lp.website.startsWith("http") ? lp.website : `https://${lp.website}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-info inline-flex items-center gap-1 hover:underline truncate"
-                >
-                  {lp.website} <ExternalLink className="h-3 w-3" />
-                </a>
-              ) : (
-                "—"
-              )}
-            </Field>
-            <Field label="Email">{lp.email ?? "—"}</Field>
-            {lp.follow_up_date && (
-              <Field label="Follow-up">
-                {new Date(lp.follow_up_date).toLocaleDateString()}
-              </Field>
-            )}
-            {lp.last_contacted && (
-              <Field label="Last contacted">
-                {new Date(lp.last_contacted).toLocaleDateString()}
-                {lp.contact_attempts != null && (
-                  <span className="text-muted-foreground"> · {lp.contact_attempts} attempts</span>
-                )}
-              </Field>
-            )}
-            {lp.google_rating != null && (
-              <Field label="Google rating">
-                ★ {lp.google_rating}
-                {lp.review_count != null && (
-                  <span className="text-muted-foreground"> ({lp.review_count} reviews)</span>
-                )}
-              </Field>
-            )}
-          </div>
-
-          {lp.ai_score_reason && (
-            <div className="mt-3 rounded-lg bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 text-foreground font-medium mr-1">
-                <Sparkles className="h-3 w-3 text-primary" /> AI:
-              </span>
-              {lp.ai_score_reason}
-            </div>
-          )}
-
-
+          {/* action row */}
           <div className="mt-4 flex items-center gap-2">
             <select
               value={lp.status}
               disabled={statusMut.isPending}
               onChange={(e) => statusMut.mutate(e.target.value as LeadStatusApi)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm flex-1"
+              className="h-9 flex-1 rounded-lg border border-white/20 bg-white/10 text-white text-sm px-3 focus:outline-none focus:ring-1 focus:ring-white/30"
             >
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                <option key={s} value={s} className="text-foreground bg-background">
+                  {STATUS_LABEL[s]}
+                </option>
               ))}
             </select>
+
+            {lp.phone && (
+              <a href={`tel:${lp.phone}`}>
+                <Button size="sm" variant="ghost"
+                  className="h-9 border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+                  <Phone className="h-4 w-4 mr-1.5" /> Call
+                </Button>
+              </a>
+            )}
+
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => assignMut.mutate()}
               disabled={assignMut.isPending}
+              className="h-9 border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
             >
-              {assignMut.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <UserPlus className="h-4 w-4 mr-1" />
-              )}
-              Assign to me
+              {assignMut.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <><UserPlus className="h-4 w-4 mr-1.5" /> Assign to me</>}
             </Button>
           </div>
         </div>
 
-        {/* Middle: add note */}
-        <div className="px-5 py-4 border-b border-border space-y-2">
-          <div className="text-sm font-medium">Add a note</div>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="What happened on this call?"
-            rows={3}
-            className="w-full rounded-lg border border-input bg-background p-3 text-sm resize-none"
-          />
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              onClick={() => noteMut.mutate()}
-              disabled={!note.trim() || noteMut.isPending}
+        {/* ── Tab bar ── */}
+        <div className="flex border-b border-border bg-muted/30 shrink-0">
+          {(["overview", "activity"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
             >
-              {noteMut.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
-              Save Note
-            </Button>
-          </div>
+              {tab === "overview"
+                ? <><User className="h-4 w-4" /> Overview</>
+                : <><Activity className="h-4 w-4" /> Activity</>}
+            </button>
+          ))}
+        </div>
 
-          {aiResult && (
-            <div className="rounded-xl border border-border bg-card p-3 shadow-sm animate-in fade-in slide-in-from-top-1 duration-300">
-              <div className="flex items-start justify-between gap-2">
-                <span
-                  className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm font-semibold ${aiLabelClasses(
-                    aiResult.ai_score_label,
-                  )}`}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {aiResult.ai_score_label ?? "SCORED"}
-                </span>
-                {aiResult.ai_score != null && (
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    Score {aiResult.ai_score}
-                  </span>
-                )}
-              </div>
-              {aiResult.ai_score_reason && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {aiResult.ai_score_reason}
-                </p>
-              )}
-              {aiResult.follow_up_date && (
-                <p className="mt-2 text-xs font-medium">
-                  Follow up by{" "}
-                  {new Date(aiResult.follow_up_date).toLocaleDateString()}
-                </p>
-              )}
-              {aiResult.signals && aiResult.signals.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {aiResult.signals.map((s, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center rounded-md bg-muted text-muted-foreground px-2 py-0.5 text-[11px]"
-                    >
-                      {s}
-                    </span>
-                  ))}
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ══ OVERVIEW TAB ══ */}
+          {activeTab === "overview" && (
+            <div className="p-6 space-y-6">
+
+              {/* Contact details */}
+              <section>
+                <SectionHeader>Contact details</SectionHeader>
+                <div className="grid grid-cols-2 gap-3">
+                  <InfoChip icon={<Phone className="h-3.5 w-3.5" />} label="Phone">
+                    {lp.phone
+                      ? <a href={`tel:${lp.phone}`} className="text-primary hover:underline">{lp.phone}</a>
+                      : <Dash />}
+                  </InfoChip>
+                  <InfoChip icon={<Mail className="h-3.5 w-3.5" />} label="Email">
+                    {lp.email
+                      ? <a href={`mailto:${lp.email}`} className="text-primary hover:underline truncate">{lp.email}</a>
+                      : <Dash />}
+                  </InfoChip>
+                  <InfoChip icon={<MapPin className="h-3.5 w-3.5" />} label="Area">
+                    {lp.area ?? <Dash />}
+                  </InfoChip>
+                  <InfoChip icon={<Globe className="h-3.5 w-3.5" />} label="Website">
+                    {lp.website
+                      ? <a
+                          href={lp.website.startsWith("http") ? lp.website : `https://${lp.website}`}
+                          target="_blank" rel="noreferrer"
+                          className="text-primary hover:underline inline-flex items-center gap-1 truncate"
+                        >
+                          {lp.website.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3 shrink-0" />
+                        </a>
+                      : <Dash />}
+                  </InfoChip>
+                  <InfoChip icon={<User className="h-3.5 w-3.5" />} label="Assigned to">
+                    {lp.assigned_to
+                      ? <span className="font-medium">{lp.assigned_to}</span>
+                      : <span className="text-muted-foreground italic text-xs">Unassigned</span>}
+                  </InfoChip>
+                  {lp.follow_up_date && (
+                    <InfoChip icon={<Calendar className="h-3.5 w-3.5" />} label="Follow-up">
+                      {new Date(lp.follow_up_date).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
+                    </InfoChip>
+                  )}
+                  {lp.last_contacted && (
+                    <InfoChip icon={<Clock className="h-3.5 w-3.5" />} label="Last contacted">
+                      {new Date(lp.last_contacted).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
+                      {lp.contact_attempts != null && (
+                        <span className="ml-1 text-muted-foreground">· {lp.contact_attempts} attempts</span>
+                      )}
+                    </InfoChip>
+                  )}
+                  {lp.google_rating != null && (
+                    <InfoChip icon={<Star className="h-3.5 w-3.5 text-amber-500" />} label="Google rating">
+                      <span className="font-semibold">{lp.google_rating}</span>
+                      {lp.review_count != null && (
+                        <span className="ml-1 text-muted-foreground">({lp.review_count} reviews)</span>
+                      )}
+                    </InfoChip>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              </section>
 
-          {notes.length > 0 && (
-            <div className="pt-3 space-y-2">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Notes history
-              </div>
-              <ul className="space-y-2">
-                {notes.map((n, i) => (
-                  <li
-                    key={n.id ?? i}
-                    className="rounded-lg border border-border bg-card p-3 relative"
-                  >
-                    {n.ai_score_label && (
-                      <span
-                        className={`absolute top-2 right-2 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold ${aiLabelClasses(
-                          n.ai_score_label,
-                        )}`}
-                      >
-                        <Sparkles className="h-3 w-3" />
-                        {n.ai_score_label}
-                      </span>
-                    )}
-                    <div className="text-sm whitespace-pre-wrap pr-24">{n.note}</div>
-                    {n.ai_score_reason && (
-                      <div className="mt-1.5 text-xs text-muted-foreground">
-                        {n.ai_score_reason}
-                      </div>
-                    )}
-                    <div className="mt-2 text-[11px] text-muted-foreground">
-                      {n.created_by ?? "—"} · {relativeTime(n.created_at)}
+              {/* Contact person */}
+              <section>
+                <SectionHeader>Contact person</SectionHeader>
+                <div className="grid grid-cols-2 gap-3">
+                  <InlineEditChip
+                    label="Name"
+                    value={lp.contact_person ?? ""}
+                    placeholder="Add contact name"
+                    saving={contactMut.isPending}
+                    onSave={(v) => contactMut.mutate({ contact_person: v || null })}
+                  />
+                  <InlineEditChip
+                    label="Role"
+                    value={lp.contact_person_role ?? ""}
+                    placeholder="Add their role"
+                    saving={contactMut.isPending}
+                    onSave={(v) => contactMut.mutate({ contact_person_role: v || null })}
+                  />
+                </div>
+              </section>
+
+              {/* AI insight */}
+              {(scoreLabel || lp.ai_score_reason) && (
+                <section>
+                  <SectionHeader>AI insight</SectionHeader>
+                  <div className={`rounded-xl border p-4 ${meta.cls}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="font-semibold text-sm">{meta.label}</span>
+                      {score > 0 && (
+                        <span className="ml-auto text-xs font-bold tabular-nums opacity-70">Score {score}</span>
+                      )}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-
-        {/* Bottom: timeline */}
-        <div className="px-5 py-4">
-          <div className="text-sm font-medium mb-3">Activity</div>
-          {timelineQ.isLoading ? (
-            <div className="text-sm text-muted-foreground">Loading timeline…</div>
-          ) : timeline.length === 0 ? (
-            <div className="text-sm text-muted-foreground italic">
-              No activity yet — be the first to log a call
-            </div>
-          ) : (
-            <>
-              <ol className="relative pl-8 space-y-5 before:content-[''] before:absolute before:left-[11px] before:top-1 before:bottom-1 before:w-0.5 before:bg-success/40">
-                {visibleTimeline.map((t, i) => (
-                  <TimelineItem key={i} item={t} />
-                ))}
-              </ol>
-              {hiddenCount > 0 && (
-                <button
-                  onClick={() => setShowAllTimeline(true)}
-                  className="mt-3 text-xs text-primary hover:underline font-medium"
-                >
-                  Show older activity ({hiddenCount})
-                </button>
+                    {lp.ai_score_reason && (
+                      <p className="text-sm leading-relaxed opacity-90">{lp.ai_score_reason}</p>
+                    )}
+                  </div>
+                </section>
               )}
-            </>
+
+              {/* Log a note */}
+              <section>
+                <SectionHeader icon={<MessageSquarePlus className="h-4 w-4" />}>Log a note</SectionHeader>
+                <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="What happened on this call? The AI will re-score the lead after you save."
+                    rows={4}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={() => noteMut.mutate()}
+                      disabled={!note.trim() || noteMut.isPending}
+                    >
+                      {noteMut.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+                      Save note
+                    </Button>
+                  </div>
+
+                  {/* AI result after saving */}
+                  {aiResult && (
+                    <div className={`rounded-lg border p-3 animate-in fade-in slide-in-from-top-1 duration-300 ${aiMeta(aiResult.ai_score_label).cls}`}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
+                          <Sparkles className="h-3.5 w-3.5" />
+                          {aiMeta(aiResult.ai_score_label).label}
+                        </span>
+                        {aiResult.ai_score != null && (
+                          <span className="text-xs tabular-nums font-bold">Score {aiResult.ai_score}</span>
+                        )}
+                      </div>
+                      {aiResult.ai_score_reason && (
+                        <p className="text-xs leading-relaxed opacity-90">{aiResult.ai_score_reason}</p>
+                      )}
+                      {aiResult.follow_up_date && (
+                        <p className="mt-1.5 text-xs font-medium">
+                          Follow up by {new Date(aiResult.follow_up_date).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
+                        </p>
+                      )}
+                      {aiResult.signals && aiResult.signals.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {aiResult.signals.map((s, i) => (
+                            <span key={i} className="inline-flex items-center rounded bg-black/5 px-1.5 py-0.5 text-[10px] font-medium">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Notes history */}
+              {notes.length > 0 && (
+                <section>
+                  <SectionHeader>Notes ({notes.length})</SectionHeader>
+                  <div className="space-y-3">
+                    {notes.map((n, i) => (
+                      <NoteCard key={n.id ?? i} note={n} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+
+          {/* ══ ACTIVITY TAB ══ */}
+          {activeTab === "activity" && (
+            <div className="p-6">
+              <SectionHeader icon={<Activity className="h-4 w-4" />}>Timeline</SectionHeader>
+
+              {timelineQ.isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading activity…
+                </div>
+              ) : timeline.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+                  <Activity className="h-10 w-10 mb-3 opacity-20" />
+                  <p className="text-sm">No activity yet</p>
+                  <p className="text-xs mt-1 opacity-70">Log a note on the Overview tab to start</p>
+                </div>
+              ) : (
+                <>
+                  <ol className="space-y-1">
+                    {visibleTimeline.map((t, i) => (
+                      <TimelineItem key={i} item={t} last={i === visibleTimeline.length - 1 && hiddenCount === 0} />
+                    ))}
+                  </ol>
+                  {hiddenCount > 0 && (
+                    <button
+                      onClick={() => setShowAllTimeline(true)}
+                      className="mt-4 text-xs text-primary hover:underline font-medium flex items-center gap-1"
+                    >
+                      Show {hiddenCount} older event{hiddenCount !== 1 ? "s" : ""}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
-       </div>
       </div>
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/* ─── small UI pieces ───────────────────────────────────────── */
+
+function SectionHeader({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
   return (
-    <div className="min-w-0">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-sm mt-0.5 truncate">{children}</div>
+    <div className="flex items-center gap-2 mb-3">
+      {icon && <span className="text-muted-foreground">{icon}</span>}
+      <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{children}</h4>
     </div>
   );
 }
 
-function InlineEditField({
+function Dash() {
+  return <span className="text-muted-foreground/50">—</span>;
+}
+
+function InfoChip({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 min-w-0">
+      <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+        {icon}
+        <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+      </div>
+      <div className="text-sm font-medium truncate">{children}</div>
+    </div>
+  );
+}
+
+function InlineEditChip({
   label,
   value,
   placeholder,
@@ -444,139 +589,156 @@ function InlineEditField({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
+  useEffect(() => { setDraft(value); }, [value]);
 
   const commit = () => {
-    const trimmed = draft.trim();
-    if (trimmed !== (value ?? "").trim()) onSave(trimmed);
+    if (draft.trim() !== (value ?? "").trim()) onSave(draft.trim());
     setEditing(false);
   };
 
   return (
-    <div className="min-w-0">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {label}
+    <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 min-w-0">
+      <div className="flex items-center justify-between text-muted-foreground mb-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+        {!editing && (
+          <button onClick={() => setEditing(true)} className="opacity-0 group-hover:opacity-100 hover:text-primary">
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
       </div>
       {editing ? (
-        <div className="mt-0.5 flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <input
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") commit();
-              if (e.key === "Escape") {
-                setDraft(value);
-                setEditing(false);
-              }
+              if (e.key === "Escape") { setDraft(value); setEditing(false); }
             }}
-            className="h-7 w-full rounded border border-input bg-background px-2 text-sm"
+            className="h-7 flex-1 rounded border border-input bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
           />
           <button
             onClick={commit}
             disabled={saving}
-            className="rounded p-1 text-success hover:bg-muted"
+            className="rounded p-1 text-emerald-600 hover:bg-muted"
             aria-label="Save"
           >
-            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
           </button>
         </div>
       ) : (
         <button
           onClick={() => setEditing(true)}
-          className="mt-0.5 inline-flex items-center gap-1 text-sm text-left truncate hover:text-primary group w-full"
+          className="group flex items-center gap-1.5 text-sm font-medium text-left w-full hover:text-primary"
         >
-          <span className={value ? "" : "text-muted-foreground italic"}>
+          <span className={value ? "" : "text-muted-foreground italic font-normal text-xs"}>
             {value || placeholder}
           </span>
-          <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-60 shrink-0" />
+          <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 shrink-0" />
         </button>
       )}
     </div>
   );
 }
 
-function TimelineDot({ variant }: { variant: "status" | "note" | "assigned" }) {
-  const cls =
-    variant === "status"
-      ? "bg-success"
-      : variant === "note"
-        ? "bg-info"
-        : "bg-primary";
+function NoteCard({ note: n }: { note: LeadNote }) {
+  const meta = aiMeta(n.ai_score_label);
   return (
-    <span
-      className={`absolute -left-[22px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-background ${cls}`}
-    />
+    <div className="rounded-xl border border-border bg-card p-4 relative">
+      {n.ai_score_label && (
+        <span className={`absolute top-3 right-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${meta.cls}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+          {meta.label}
+        </span>
+      )}
+      <p className="text-sm leading-relaxed whitespace-pre-wrap pr-28">{n.note}</p>
+      {n.ai_score_reason && (
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{n.ai_score_reason}</p>
+      )}
+      <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+        <span className="font-medium text-foreground/70">{n.created_by ?? "Unknown"}</span>
+        <span>·</span>
+        <span>{relativeTime(n.created_at)}</span>
+      </div>
+    </div>
   );
 }
 
-function TimelineItem({ item }: { item: LeadTimelineItem }) {
+function TimelineItem({ item, last }: { item: LeadTimelineItem; last: boolean }) {
   const ts = item.timestamp || item.created_at;
-  const when = relativeTime(ts);
 
-  if (item.type === "event") {
-    if (item.event_type === "assigned") {
-      return (
-        <li className="relative text-sm">
-          <TimelineDot variant="assigned" />
-          <div>
-            Lead assigned to <span className="font-semibold">{item.to_value ?? "—"}</span>
-          </div>
-          <div className="text-xs text-muted-foreground mt-0.5">{when}</div>
-        </li>
-      );
-    }
-    return (
-      <li className="relative text-sm">
-        <TimelineDot variant="status" />
-        <div>
-          <span className="font-medium">{item.changed_by ?? "Someone"}</span>{" "}
-          moved{" "}
-          <span className="font-semibold">{item.from_value ?? "—"}</span>
-          {" → "}
-          <span className="font-semibold">{item.to_value ?? "—"}</span>
-        </div>
-        <div className="text-xs text-muted-foreground mt-0.5">{when}</div>
-      </li>
-    );
-  }
+  const isNote = item.type !== "event";
+  const isAssigned = item.type === "event" && item.event_type === "assigned";
+
+  const dotColor = isAssigned
+    ? "bg-violet-500 ring-violet-200"
+    : isNote
+    ? "bg-sky-500 ring-sky-200"
+    : "bg-emerald-500 ring-emerald-200";
 
   return (
-    <li className="relative">
-      <TimelineDot variant="note" />
-      <div className="rounded-lg border border-border bg-card p-3 shadow-sm relative">
-        {item.ai_score_label && (
-          <span
-            className={`absolute top-2 right-2 inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold ${aiLabelClasses(
-              item.ai_score_label,
-            )}`}
-          >
-            <Sparkles className="h-3 w-3" />
-            {item.ai_score_label}
-          </span>
+    <li className="relative flex gap-4 pb-6">
+      {/* vertical line */}
+      {!last && (
+        <div className="absolute left-[11px] top-5 bottom-0 w-px bg-border" />
+      )}
+
+      {/* dot */}
+      <div className={`mt-1 shrink-0 h-[22px] w-[22px] rounded-full ${dotColor} ring-4 flex items-center justify-center`}>
+        {isNote ? (
+          <MessageSquarePlus className="h-3 w-3 text-white" />
+        ) : isAssigned ? (
+          <UserPlus className="h-3 w-3 text-white" />
+        ) : (
+          <Activity className="h-3 w-3 text-white" />
         )}
-        <div className="text-sm whitespace-pre-wrap pr-24">{item.note}</div>
-        {item.ai_score_reason && (
-          <div className="mt-1.5 text-xs text-muted-foreground">
-            {item.ai_score_reason}
-          </div>
-        )}
-        {item.signals && item.signals.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {item.signals.map((s, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center rounded-md bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px]"
-              >
-                {s}
+      </div>
+
+      {/* content */}
+      <div className="flex-1 min-w-0 pt-0.5">
+        {isAssigned ? (
+          <p className="text-sm">
+            Lead assigned to{" "}
+            <span className="font-semibold">{item.to_value ?? "—"}</span>
+          </p>
+        ) : !isNote ? (
+          <p className="text-sm">
+            <span className="font-medium">{item.changed_by ?? "Someone"}</span>
+            {" moved "}
+            <span className="font-semibold">{item.from_value ?? "—"}</span>
+            {" → "}
+            <span className="font-semibold">{item.to_value ?? "—"}</span>
+          </p>
+        ) : (
+          <div className="rounded-xl border border-border bg-card p-3.5">
+            {item.ai_score_label && (
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold mb-2 ${aiMeta(item.ai_score_label).cls}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${aiMeta(item.ai_score_label).dot}`} />
+                {aiMeta(item.ai_score_label).label}
               </span>
-            ))}
+            )}
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{item.note}</p>
+            {item.ai_score_reason && (
+              <p className="mt-1.5 text-xs text-muted-foreground">{item.ai_score_reason}</p>
+            )}
+            {item.signals && item.signals.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {item.signals.map((s, i) => (
+                  <span key={i} className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
-        <div className="mt-2 text-[11px] text-muted-foreground">
-          {item.created_by ?? "—"} · {when}
+
+        <div className="mt-1.5 text-[11px] text-muted-foreground">
+          {!isNote && item.changed_by && (
+            <span className="font-medium text-foreground/60 mr-1">{item.changed_by} ·</span>
+          )}
+          {relativeTime(ts)}
         </div>
       </div>
     </li>
