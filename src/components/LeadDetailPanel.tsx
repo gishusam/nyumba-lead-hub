@@ -122,7 +122,7 @@ export function LeadDetailPanel({
   const [note, setNote] = useState("");
   const [aiResult, setAiResult] = useState<AiNoteResult | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "activity">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "activity" | "email">("overview");
 
   useEffect(() => {
     if (!open) return;
@@ -309,7 +309,7 @@ export function LeadDetailPanel({
 
         {/* ── Tab bar ── */}
         <div className="flex border-b border-border bg-muted/30 shrink-0">
-          {(["overview", "activity"] as const).map((tab) => (
+            {(["overview", "activity", "email"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -321,7 +321,9 @@ export function LeadDetailPanel({
             >
               {tab === "overview"
                 ? <><User className="h-4 w-4" /> Overview</>
-                : <><Activity className="h-4 w-4" /> Activity</>}
+                : tab === "activity"
+                ? <><Activity className="h-4 w-4" /> Activity</>
+                : <><Mail className="h-4 w-4" /> Email</>}
             </button>
           ))}
         </div>
@@ -410,9 +412,6 @@ export function LeadDetailPanel({
                   />
                 </div>
               </section>
-
-              {/* Email outreach */}
-              <LeadEmailSection lead={lp} />
 
               {/* AI insight */}
               {(scoreLabel || lp.ai_score_reason) && (
@@ -535,6 +534,13 @@ export function LeadDetailPanel({
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* ══ EMAIL TAB ══ */}
+          {activeTab === "email" && (
+            <div className="p-6">
+              <LeadEmailSection lead={lp} />
             </div>
           )}
         </div>
