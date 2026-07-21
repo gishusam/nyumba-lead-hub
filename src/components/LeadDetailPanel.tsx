@@ -539,7 +539,7 @@ export function LeadDetailPanel({
 
           {/* ══ EMAIL TAB ══ */}
           {activeTab === "email" && (
-            <div className="p-6">
+            <div className="px-6 py-5">
               <LeadEmailSection lead={lp} />
             </div>
           )}
