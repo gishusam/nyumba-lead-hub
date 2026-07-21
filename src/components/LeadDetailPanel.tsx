@@ -32,6 +32,7 @@ import {
   type LeadTimelineItem,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { LeadEmailSection } from "@/components/LeadEmailSection";
 
 /* ─── helpers ──────────────────────────────────────────────── */
 
@@ -409,6 +410,9 @@ export function LeadDetailPanel({
                   />
                 </div>
               </section>
+
+              {/* Email outreach */}
+              <LeadEmailSection lead={lp} />
 
               {/* AI insight */}
               {(scoreLabel || lp.ai_score_reason) && (

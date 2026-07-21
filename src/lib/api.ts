@@ -529,6 +529,61 @@ export const scraperApi = {
 
 };
 
+// ============= Email Outreach =============
+export type EmailType = "cold" | "followup";
+export type TemplateName = "template_1" | "template_2" | "template_3";
+
+export type EmailPreviewRequest =
+  | { email_type: "cold"; template_name: TemplateName }
+  | { email_type: "followup" };
+
+export type EmailPreviewResponse = {
+  email_id: string | number;
+  subject: string;
+  body: string;
+  has_email: boolean;
+  to_email?: string | null;
+};
+
+export type EmailSendRequest = {
+  email_id: string | number;
+  final_body: string;
+  to_email?: string | null;
+  final_subject?: string;
+};
+
+export type EmailSendResponse = {
+  success: boolean;
+  message?: string;
+  follow_up_date?: string | null;
+};
+
+export type LeadEmail = {
+  id: string | number;
+  sent_at?: string | null;
+  created_at?: string | null;
+  email_type: EmailType;
+  sent_by?: string | null;
+  status?: string | null;
+  subject?: string | null;
+  body?: string | null;
+};
+
+export const emailApi = {
+  preview: (leadId: string, payload: EmailPreviewRequest) =>
+    request<EmailPreviewResponse>(`/api/leads/${leadId}/email/preview`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  send: (leadId: string, payload: EmailSendRequest) =>
+    request<EmailSendResponse>(`/api/leads/${leadId}/email/send`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  list: (leadId: string) =>
+    request<LeadEmail[] | { data: LeadEmail[] }>(`/api/leads/${leadId}/emails`),
+};
+
 // ============= Helpers =============
 export const STATUS_LABEL: Record<LeadStatusApi, string> = {
   new: "New",
