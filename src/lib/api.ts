@@ -376,11 +376,11 @@ export const leadsApi = {
       method: "POST",
       body: JSON.stringify({ note, created_by }),
     }),
-  assign: (id: string, assigned_to?: string) =>
-    request<{ id: string; assigned_to: string }>(`/api/leads/${id}/assign`, {
-      method: "PATCH",
-      body: JSON.stringify(assigned_to !== undefined ? { assigned_to } : {}),
-    }),
+  assign: (id: string) =>
+    request<{ id: string; name: string; assigned_to: string; message?: string }>(
+      `/api/leads/${id}/assign`,
+      { method: "PATCH" },
+    ),
   import: async (file: File, lead_type?: LeadType) => {
     const fd = new FormData();
     fd.append("file", file);
@@ -580,6 +580,32 @@ export const emailApi = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  sendWithFile: async (
+    leadId: string,
+    payload: EmailSendRequest,
+    attachment: File,
+  ): Promise<EmailSendResponse> => {
+    const token = getToken();
+    const fd = new FormData();
+    fd.append("email_id", String(payload.email_id));
+    fd.append("final_body", payload.final_body);
+    if (payload.to_email) fd.append("to_email", payload.to_email);
+    fd.append("attachment", attachment);
+    const res = await fetch(
+      `${API_BASE_URL}/api/leads/${leadId}/email/send-with-file`,
+      {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      },
+    );
+    if (!res.ok) {
+      let body: unknown = null;
+      try { body = await res.json(); } catch {}
+      throw new ApiError(res.status, body, `Request failed: ${res.status}`);
+    }
+    return res.json() as Promise<EmailSendResponse>;
+  },
   list: (leadId: string) =>
     request<LeadEmail[] | { data: LeadEmail[] }>(`/api/leads/${leadId}/emails`),
 };

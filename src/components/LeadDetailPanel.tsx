@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   X,
@@ -167,8 +168,13 @@ export function LeadDetailPanel({
     onSuccess: invalidateLead,
   });
   const assignMut = useMutation({
-    mutationFn: () => leadsApi.assign(lead!.id, me?.name ?? me?.id),
-    onSuccess: invalidateLead,
+    mutationFn: () => leadsApi.assign(lead!.id),
+    onSuccess: (data) => {
+      toast.success("Lead assigned to you");
+      invalidateLead();
+      qc.invalidateQueries({ queryKey: ["leads", "mine"] });
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Failed to assign lead"),
   });
   const noteMut = useMutation({
     mutationFn: () => leadsApi.addNote(lead!.id, note.trim(), me?.name),

@@ -127,7 +127,11 @@ function MyLeads() {
               {!query.isLoading && !query.isError && filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-16 text-center text-muted-foreground">
-                    No leads assigned to you yet — go to Apartments or Agencies and click Assign to Me
+                    <p className="font-medium">No leads assigned to you yet.</p>
+                    <p className="mt-1 text-sm">
+                      Go to Apartments, Agencies or Developers<br />
+                      and click <span className="font-medium">Assign to me</span> on any lead.
+                    </p>
                   </td>
                 </tr>
               )}

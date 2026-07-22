@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ExternalLink, Phone, Search, Upload } from "lucide-react";
+import { ExternalLink, Phone, Search, Upload, UserPlus, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   leadsApi,
   dashboardApi,
+  getCurrentUser,
   STATUS_LABEL,
   STATUS_OPTIONS,
   type Lead,
@@ -49,6 +51,17 @@ export function LeadsTable({
   const [page, setPage] = useState(1);
   const [importOpen, setImportOpen] = useState(false);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
+
+  const assignMut = useMutation({
+    mutationFn: (id: string) => leadsApi.assign(id),
+    onSuccess: () => {
+      toast.success("Lead assigned to you");
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["leads", "mine"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Failed to assign lead"),
+  });
 
   const limit = 20;
 
@@ -300,6 +313,19 @@ export function LeadsTable({
                           <Button size="sm" variant="ghost"><Phone className="h-3.5 w-3.5" /></Button>
                         </a>
                       )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={assignMut.isPending && assignMut.variables === r.id}
+                        onClick={() => assignMut.mutate(r.id)}
+                        className="gap-1 text-xs"
+                        title="Assign to me"
+                      >
+                        {assignMut.isPending && assignMut.variables === r.id
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <UserPlus className="h-3.5 w-3.5" />}
+                        Assign to me
+                      </Button>
                       <select
                         value={r.status}
                         disabled={updateStatus.isPending}

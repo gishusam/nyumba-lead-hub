@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Inbox,
   RefreshCw,
+  Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,6 +24,14 @@ import {
   type LeadEmail,
   type TemplateName,
 } from "@/lib/api";
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+function fmtFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 import { Button } from "@/components/ui/button";
 
 const TEMPLATE_OPTIONS: { value: TemplateName; label: string; desc: string }[] = [
@@ -87,6 +96,8 @@ export function LeadEmailSection({ lead }: { lead: Lead }) {
   const [editBody, setEditBody] = useState("");
   const [manualEmail, setManualEmail] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string | number>>(new Set());
+  const [attachFile, setAttachFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const canSendCold = lead.status === "new" || lead.status === "called";
   const canSendFollowup = !!lead.last_contacted;
@@ -127,12 +138,14 @@ export function LeadEmailSection({ lead }: { lead: Lead }) {
   const sendMut = useMutation({
     mutationFn: () => {
       if (!preview) throw new Error("No preview");
-      return emailApi.send(lead.id, {
+      const payload = {
         email_id: preview.email_id,
         final_subject: editSubject,
         final_body: editBody,
         to_email: !preview.has_email ? (manualEmail || null) : null,
-      });
+      };
+      if (attachFile) return emailApi.sendWithFile(lead.id, payload, attachFile);
+      return emailApi.send(lead.id, payload);
     },
     onSuccess: (data) => {
       const dateStr = data.follow_up_date
@@ -159,6 +172,20 @@ export function LeadEmailSection({ lead }: { lead: Lead }) {
     setFlow(null);
     setPreview(null);
     setSelectedTemplate("template_1");
+    setAttachFile(null);
+    setFileError(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    e.target.value = ""; // reset so same file can be re-selected
+    if (!file) return;
+    if (file.size > MAX_FILE_BYTES) {
+      setFileError("File too large — maximum 5MB");
+      return;
+    }
+    setFileError(null);
+    setAttachFile(file);
   };
 
   const toggleExpand = (id: string | number) =>
@@ -456,6 +483,43 @@ export function LeadEmailSection({ lead }: { lead: Lead }) {
                       rows={11}
                       className="w-full rounded-xl border border-input bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
                     />
+                  </div>
+
+                  {/* Attachment */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                      Attachment <span className="normal-case font-normal text-muted-foreground/60">(optional · PDF, DOC, image · max 5 MB)</span>
+                    </label>
+                    {attachFile ? (
+                      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-2">
+                        <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="flex-1 text-sm truncate">{attachFile.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">{fmtFileSize(attachFile.size)}</span>
+                        <button
+                          onClick={() => { setAttachFile(null); setFileError(null); }}
+                          className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          aria-label="Remove attachment"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground hover:border-muted-foreground/40 hover:bg-muted/40 transition-colors">
+                        <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                        <span>Attach file</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp"
+                          className="sr-only"
+                          onChange={handleFileChange}
+                        />
+                      </label>
+                    )}
+                    {fileError && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <XCircle className="h-3 w-3 shrink-0" /> {fileError}
+                      </p>
+                    )}
                   </div>
 
                   {sendMut.isError && (
