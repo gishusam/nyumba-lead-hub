@@ -285,30 +285,27 @@ export function LeadsTable({
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Area</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium">Email Status</th>
-                <th className="px-4 py-3 font-medium">Last Email</th>
-                <th className="px-4 py-3 font-medium">Follow-up Date</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">
                     Loading…
                   </td>
                 </tr>
               )}
               {isError && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-destructive">
+                  <td colSpan={4} className="px-4 py-10 text-center text-destructive">
                     Failed to load leads.
                   </td>
                 </tr>
               )}
               {!isLoading && !isError && filteredOutreach.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">
                     No leads found.
                   </td>
                 </tr>
@@ -327,15 +324,6 @@ export function LeadsTable({
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
                   <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.phone ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <EmailStatusBadge status={r.email_status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <LastEmailCell lead={r} />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                    {fmtDate(r.follow_up_date)}
-                  </td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end items-center gap-1.5">
                       <Button
