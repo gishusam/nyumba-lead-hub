@@ -529,6 +529,32 @@ export const scraperApi = {
 
 };
 
+// ============= Outreach (email status filtering) =============
+export type OutreachFilter = "all" | "emailed" | "not_emailed";
+
+export type OutreachLead = Lead & {
+  email_status: "emailed" | "not_emailed";
+  last_email_type?: string | null;
+  last_email_at?: string | null;
+  last_email_sent_by?: string | null;
+};
+
+export type OutreachResponse = {
+  counts: { all: number; emailed: number; not_emailed: number };
+  data: OutreachLead[];
+  total: number;
+  page: number;
+  pages: number;
+  limit: number;
+};
+
+export const outreachApi = {
+  list: (leadType: LeadType, filterBy: OutreachFilter = "all", page = 1, limit = 20) =>
+    request<OutreachResponse>(
+      `/api/leads/outreach${qs({ lead_type: leadType, filter_by: filterBy, page, limit })}`,
+    ),
+};
+
 // ============= Email Outreach =============
 export type EmailType = "cold" | "followup";
 export type TemplateName = "template_1" | "template_2" | "template_3";

@@ -111,9 +111,13 @@ const STATUS_DOT: Record<string, string> = {
 export function LeadDetailPanel({
   lead,
   onClose,
+  defaultTab = "overview",
+  defaultEmailFlow,
 }: {
   lead: Lead | null;
   onClose: () => void;
+  defaultTab?: "overview" | "activity" | "email";
+  defaultEmailFlow?: "cold" | "followup";
 }) {
   const qc = useQueryClient();
   const [me, setMe] = useState<import("@/lib/api").AuthUser | null>(null);
@@ -123,7 +127,7 @@ export function LeadDetailPanel({
   const [note, setNote] = useState("");
   const [aiResult, setAiResult] = useState<AiNoteResult | null>(null);
   const [showAllTimeline, setShowAllTimeline] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "activity" | "email">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "activity" | "email">(defaultTab);
 
   useEffect(() => {
     if (!open) return;
@@ -136,8 +140,8 @@ export function LeadDetailPanel({
     setNote("");
     setAiResult(null);
     setShowAllTimeline(false);
-    setActiveTab("overview");
-  }, [lead?.id]);
+    setActiveTab(defaultTab);
+  }, [lead?.id, defaultTab]);
 
   const timelineQ = useQuery({
     queryKey: ["leads", "timeline", lead?.id],
@@ -546,7 +550,7 @@ export function LeadDetailPanel({
           {/* ══ EMAIL TAB ══ */}
           {activeTab === "email" && (
             <div className="px-6 py-5">
-              <LeadEmailSection lead={lp} />
+              <LeadEmailSection lead={lp} autoFlow={defaultEmailFlow} />
             </div>
           )}
         </div>

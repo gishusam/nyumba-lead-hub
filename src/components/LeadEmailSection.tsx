@@ -86,7 +86,13 @@ function StatusPill({ status }: { status?: string | null }) {
   );
 }
 
-export function LeadEmailSection({ lead }: { lead: Lead }) {
+export function LeadEmailSection({
+  lead,
+  autoFlow,
+}: {
+  lead: Lead;
+  autoFlow?: "cold" | "followup";
+}) {
   const qc = useQueryClient();
 
   const [flow, setFlow] = useState<Flow>(null);
@@ -167,6 +173,10 @@ export function LeadEmailSection({ lead }: { lead: Lead }) {
     setEditBody("");
     setManualEmail("");
   };
+
+  // Auto-open a flow when the parent requests it (e.g. "Send Follow-up" from the dashboard)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (autoFlow) openFlow(autoFlow); }, [autoFlow]);
 
   const closeDialog = () => {
     setFlow(null);
