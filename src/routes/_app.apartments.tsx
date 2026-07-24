@@ -95,7 +95,7 @@ type PanelConfig = {
 const OUTREACH_TABS: { key: OutreachFilter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "emailed", label: "Emailed" },
-  { key: "not_emailed", label: "Not Emailed" },
+  { key: "not_emailed", label: "Cold Email" },
 ];
 
 export function LeadsTable({
@@ -123,6 +123,11 @@ export function LeadsTable({
   // Outreach state
   const [outreachTab, setOutreachTab] = useState<OutreachFilter>("all");
   const [outreachPage, setOutreachPage] = useState(1);
+
+  // Extra client-side filters
+  const [filterSource, setFilterSource] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"" | LeadStatusApi>("");
+  const [filterAiScore, setFilterAiScore] = useState<"" | AiScoreLabel>("");
 
   // Panel config (supports defaultTab + defaultEmailFlow)
   const [panelConfig, setPanelConfig] = useState<PanelConfig | null>(null);
@@ -172,10 +177,17 @@ export function LeadsTable({
   const outreachTotal = outreachQ.data?.total ?? 0;
   const outreachPages = outreachQ.data?.pages ?? 1;
 
-  // Text-filter outreach rows client-side
-  const filteredOutreach = q
-    ? outreachData.filter((r) => r.name.toLowerCase().includes(q.toLowerCase()) || (r.area ?? "").toLowerCase().includes(q.toLowerCase()))
-    : outreachData;
+  // Text + client-side filters on outreach rows
+  const filteredOutreach = outreachData.filter((r) => {
+    if (q && !r.name.toLowerCase().includes(q.toLowerCase()) && !(r.area ?? "").toLowerCase().includes(q.toLowerCase())) return false;
+    if (filterSource && r.source !== filterSource) return false;
+    if (filterStatus && r.status !== filterStatus) return false;
+    if (filterAiScore && (r.ai_score_label as string) !== filterAiScore) return false;
+    return true;
+  });
+
+  // Derive available sources from current data for the dropdown
+  const availableSources = Array.from(new Set(outreachData.map((r) => r.source).filter(Boolean))) as string[];
 
   // ── Existing leads query (kept for compatibility, not used in outreach tabs) ──
   const PAGE_SIZE = 50;
@@ -257,8 +269,8 @@ export function LeadsTable({
         </div>
 
         {/* ── Filters row ── */}
-        <div className="flex flex-wrap items-center gap-3 p-4 border-b border-border">
-          <div className="relative flex-1 min-w-[220px]">
+        <div className="flex flex-wrap items-center gap-2 p-4 border-b border-border">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={q}
@@ -275,37 +287,69 @@ export function LeadsTable({
             <option value="">All areas</option>
             {allAreas.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
+          <select
+            value={filterSource}
+            onChange={(e) => setFilterSource(e.target.value)}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            <option value="">All sources</option>
+            {availableSources.map((s) => (
+              <option key={s} value={s}>{SOURCE_LABELS[s as keyof typeof SOURCE_LABELS] ?? s}</option>
+            ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as "" | LeadStatusApi)}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            <option value="">All statuses</option>
+            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+          </select>
+          <select
+            value={filterAiScore}
+            onChange={(e) => setFilterAiScore(e.target.value as "" | AiScoreLabel)}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            <option value="">AI Score: All</option>
+            {AI_SCORE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
         </div>
 
         {/* ── Outreach table ── */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
-              <tr className="text-left">
+              <tr className="text-left text-xs uppercase tracking-wide">
                 <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Owner</th>
                 <th className="px-4 py-3 font-medium">Area</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
+                <th className="px-4 py-3 font-medium">Website</th>
+                <th className="px-4 py-3 font-medium">AI Score</th>
+                <th className="px-4 py-3 font-medium">Source</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Assigned</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
                     Loading…
                   </td>
                 </tr>
               )}
               {isError && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-destructive">
+                  <td colSpan={10} className="px-4 py-10 text-center text-destructive">
                     Failed to load leads.
                   </td>
                 </tr>
               )}
               {!isLoading && !isError && filteredOutreach.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
                     No leads found.
                   </td>
                 </tr>
@@ -316,52 +360,98 @@ export function LeadsTable({
                   onClick={() => openPanel(r)}
                   className="hover:bg-muted/30 cursor-pointer"
                 >
-                  <td className="px-4 py-3 font-medium">
-                    {r.name}
-                    {r.owner_name && (
-                      <div className="text-xs text-muted-foreground">{r.owner_name}</div>
+                  {/* Name */}
+                  <td className="px-4 py-3 font-medium max-w-[160px]">
+                    <span className="truncate block">{r.name}</span>
+                  </td>
+
+                  {/* Owner */}
+                  <td className="px-4 py-3 text-muted-foreground max-w-[120px]">
+                    <span className="truncate block">{r.owner_name ?? "—"}</span>
+                  </td>
+
+                  {/* Area */}
+                  <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
+
+                  {/* Phone */}
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground whitespace-nowrap">
+                    {r.phone ?? "—"}
+                  </td>
+
+                  {/* Website */}
+                  <td className="px-4 py-3 max-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                    {r.website ? (
+                      <a
+                        href={r.website.startsWith("http") ? r.website : `https://${r.website}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline text-xs truncate block"
+                      >
+                        {r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.area ?? "—"}</td>
-                  <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.phone ?? "—"}</td>
+
+                  {/* AI Score */}
+                  <td className="px-4 py-3">
+                    <AiScoreBadge label={r.ai_score_label as AiScoreLabel} score={r.ai_score} />
+                  </td>
+
+                  {/* Source */}
+                  <td className="px-4 py-3">
+                    {r.source ? <SourceBadge source={r.source} /> : <span className="text-muted-foreground">—</span>}
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3">
+                    <StatusBadgeApi status={r.status} />
+                  </td>
+
+                  {/* Assigned */}
+                  <td className="px-4 py-3 max-w-[120px]">
+                    {r.assigned_to ? (
+                      <span className="text-sm font-medium truncate block">{r.assigned_to}</span>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); assignMut.mutate(r.id); }}
+                        disabled={assignMut.isPending && assignMut.variables === r.id}
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+                      >
+                        {assignMut.isPending && assignMut.variables === r.id
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <UserPlus className="h-3 w-3" />}
+                        Assign me
+                      </button>
+                    )}
+                  </td>
+
+                  {/* Actions */}
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end items-center gap-1.5">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className={`gap-1 text-xs ${
+                        className={`gap-1 text-xs whitespace-nowrap ${
                           r.email_status === "emailed"
                             ? "text-violet-700 hover:text-violet-800 hover:bg-violet-50"
                             : "text-sky-700 hover:text-sky-800 hover:bg-sky-50"
                         }`}
                         onClick={() =>
-                          openPanel(
-                            r,
-                            "email",
-                            r.email_status === "emailed" ? "followup" : "cold",
-                          )
+                          openPanel(r, "email", r.email_status === "emailed" ? "followup" : "cold")
                         }
                       >
                         {r.email_status === "emailed"
                           ? <><Send className="h-3.5 w-3.5" /> Follow-up</>
-                          : <><Mail className="h-3.5 w-3.5" /> Send Email</>}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={assignMut.isPending && assignMut.variables === r.id}
-                        onClick={() => assignMut.mutate(r.id)}
-                        className="gap-1 text-xs"
-                      >
-                        {assignMut.isPending && assignMut.variables === r.id
-                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          : <UserPlus className="h-3.5 w-3.5" />}
-                        Assign to me
+                          : <><Mail className="h-3.5 w-3.5" /> Cold Email</>}
                       </Button>
                       <select
                         value={r.status}
                         disabled={updateStatus.isPending}
-                        onChange={(e) => updateStatus.mutate({ id: r.id, status: e.target.value as LeadStatusApi })}
+                        onChange={(e) =>
+                          updateStatus.mutate({ id: r.id, status: e.target.value as LeadStatusApi })
+                        }
                         className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                         onClick={(e) => e.stopPropagation()}
                       >
