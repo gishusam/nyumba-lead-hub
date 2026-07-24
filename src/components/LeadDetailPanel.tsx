@@ -183,7 +183,23 @@ export function LeadDetailPanel({
   });
   const noteMut = useMutation({
     mutationFn: () => leadsApi.addNote(lead!.id, note.trim(), me?.name),
-    onSuccess: (data) => { setNote(""); setAiResult(data ?? null); invalidateLead(); },
+    onSuccess: (data) => {
+      setNote("");
+      setAiResult(data ?? null);
+      invalidateLead();
+      const score = data?.ai_score;
+      const label = data?.ai_score_label;
+      const labelText = label
+        ? AI_LABEL_META[label]?.label ?? label
+        : null;
+      toast.success(
+        labelText
+          ? `Note saved · AI score updated to ${score ?? "—"} (${labelText})`
+          : "Note saved",
+      );
+    },
+    onError: (err: any) =>
+      toast.error(err?.message ?? "Failed to save note — please try again"),
   });
   const contactMut = useMutation({
     mutationFn: (payload: { contact_person?: string | null; contact_person_role?: string | null }) =>
@@ -304,17 +320,24 @@ export function LeadDetailPanel({
               </a>
             )}
 
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => assignMut.mutate()}
-              disabled={assignMut.isPending}
-              className="h-9 border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-            >
-              {assignMut.isPending
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <><UserPlus className="h-4 w-4 mr-1.5" /> Assign to me</>}
-            </Button>
+            {lp.assigned_to ? (
+              <div className="h-9 flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 text-white px-3 text-sm font-medium">
+                <User className="h-4 w-4 shrink-0 opacity-70" />
+                <span className="truncate max-w-[140px]">{lp.assigned_to}</span>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => assignMut.mutate()}
+                disabled={assignMut.isPending}
+                className="h-9 border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              >
+                {assignMut.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <><UserPlus className="h-4 w-4 mr-1.5" /> Assign to me</>}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -355,11 +378,6 @@ export function LeadDetailPanel({
                       ? <a href={`tel:${lp.phone}`} className="text-primary hover:underline">{lp.phone}</a>
                       : <Dash />}
                   </InfoChip>
-                  <InfoChip icon={<Mail className="h-3.5 w-3.5" />} label="Email">
-                    {lp.email
-                      ? <a href={`mailto:${lp.email}`} className="text-primary hover:underline truncate">{lp.email}</a>
-                      : <Dash />}
-                  </InfoChip>
                   <InfoChip icon={<MapPin className="h-3.5 w-3.5" />} label="Area">
                     {lp.area ?? <Dash />}
                   </InfoChip>
@@ -379,11 +397,6 @@ export function LeadDetailPanel({
                       ? <span className="font-medium">{lp.assigned_to}</span>
                       : <span className="text-muted-foreground italic text-xs">Unassigned</span>}
                   </InfoChip>
-                  {lp.follow_up_date && (
-                    <InfoChip icon={<Calendar className="h-3.5 w-3.5" />} label="Follow-up">
-                      {new Date(lp.follow_up_date).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
-                    </InfoChip>
-                  )}
                   {lp.last_contacted && (
                     <InfoChip icon={<Clock className="h-3.5 w-3.5" />} label="Last contacted">
                       {new Date(lp.last_contacted).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}
