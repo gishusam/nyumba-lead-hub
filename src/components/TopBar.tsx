@@ -8,7 +8,9 @@ import { clearAuth, getCurrentUser, leadsApi } from "@/lib/api";
 export function TopBar() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const user = getCurrentUser();
+  // Read from localStorage client-side only to avoid SSR hydration mismatch
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
+  useEffect(() => { setUser(getCurrentUser()); }, []);
   const initials =
     user?.name
       ?.split(" ")

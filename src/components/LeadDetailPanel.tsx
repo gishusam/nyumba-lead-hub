@@ -99,7 +99,8 @@ function aiMeta(label?: string | null) {
 
 const STATUS_DOT: Record<string, string> = {
   new: "bg-zinc-400",
-  contacted: "bg-sky-500",
+  called: "bg-sky-500",
+  contacted: "bg-sky-500", // legacy alias
   demo_booked: "bg-violet-500",
   won: "bg-emerald-500",
   lost: "bg-rose-400",
