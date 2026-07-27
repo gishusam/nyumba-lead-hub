@@ -85,6 +85,7 @@ function SignInPage() {
                 <input
                   id="email"
                   type="text"
+                  autoComplete="username"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -103,6 +104,7 @@ function SignInPage() {
                   <input
                     id="password"
                     type={showPwd ? "text" : "password"}
+                    autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

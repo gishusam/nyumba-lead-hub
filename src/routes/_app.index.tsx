@@ -26,7 +26,10 @@ function Dashboard() {
   const summary = useQuery({ queryKey: ["dashboard", "summary"], queryFn: dashboardApi.summary });
   const bySource = useQuery({ queryKey: ["dashboard", "by-source"], queryFn: dashboardApi.bySource });
   const funnel = useQuery({ queryKey: ["dashboard", "funnel"], queryFn: dashboardApi.funnel });
-  const byArea = useQuery({ queryKey: ["dashboard", "by-area"], queryFn: dashboardApi.byArea });
+  const byArea = useQuery({
+    queryKey: ["dashboard", "by-area"],
+    queryFn: () => dashboardApi.byArea(),
+  });
   const activity = useQuery({ queryKey: ["dashboard", "activity"], queryFn: dashboardApi.activity });
 
   const s = summary.data;
