@@ -70,6 +70,7 @@ function ChangePasswordPage() {
           <Field
             label="Current password"
             type="password"
+            autoComplete="current-password"
             value={current}
             onChange={setCurrent}
             required
@@ -77,6 +78,7 @@ function ChangePasswordPage() {
           <Field
             label="New password"
             type="password"
+            autoComplete="new-password"
             value={next}
             onChange={setNext}
             required
@@ -85,6 +87,7 @@ function ChangePasswordPage() {
           <Field
             label="Confirm new password"
             type="password"
+            autoComplete="new-password"
             value={confirm}
             onChange={setConfirm}
             required
@@ -108,6 +111,7 @@ function ChangePasswordPage() {
 function Field({
   label,
   type,
+  autoComplete,
   value,
   onChange,
   required,
@@ -115,6 +119,7 @@ function Field({
 }: {
   label: string;
   type: string;
+  autoComplete?: string;
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
@@ -128,6 +133,7 @@ function Field({
       </label>
       <input
         type={type}
+        autoComplete={autoComplete}
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}

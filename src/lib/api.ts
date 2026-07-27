@@ -147,10 +147,12 @@ export const dashboardApi = {
     request<Array<{ type: string; count: number }>>("/api/dashboard/by-source"),
   funnel: () =>
     request<Array<{ status: string; count: number }>>("/api/dashboard/funnel"),
-  byArea: (lead_type?: string) =>
-    request<Array<{ area: string; count: number }>>(
-      `/api/dashboard/by-area${lead_type ? `?lead_type=${lead_type}` : ""}`,
-    ),
+  byArea: (leadType?: string) => {
+    const lead_type = typeof leadType === "string" ? leadType : undefined;
+    return request<Array<{ area: string; count: number }>>(
+      `/api/dashboard/by-area${qs({ lead_type })}`,
+    );
+  },
   activity: () =>
     request<
       Array<{
