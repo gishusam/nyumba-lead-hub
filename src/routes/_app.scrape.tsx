@@ -1,14 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   MapPin, Database, Loader2, CheckCircle2, XCircle, Building2, Briefcase, HardHat,
   Globe2, Building, Play, History, AlertTriangle, TrendingUp,
-  Filter, FileWarning, ArrowRight,
+  Filter, ArrowRight, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 import { scraperApi, type ScraperRun, type ScraperType as ApiScraperType, type ScraperRunRecordOutcome } from "@/lib/api";
+import {
+  PAGE_SIZE_OPTIONS,
+  paginate,
+  paginationItems,
+} from "@/lib/pagination";
+import { groupFailedRuns } from "@/lib/scraper-run-health";
 
 export const Route = createFileRoute("/_app/scrape")({
   head: () => ({ meta: [{ title: "Lead Acquisition Pipeline — Nyumba Zetu" }] }),
@@ -93,6 +99,8 @@ function ScrapePage() {
   const [hover, setHover] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [historyFilter, setHistoryFilter] = useState<{ source: string; area: string }>({ source: "All", area: "All" });
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(5);
 
   const counties = useMemo(() => ["All Counties", ...Array.from(new Set(ZONES.map((z) => z.county)))], []);
   const cities = useMemo(() => {
@@ -117,7 +125,10 @@ function ScrapePage() {
     },
   });
 
-  const runs: ScraperRun[] = runsQuery.data ?? [];
+  const runs: ScraperRun[] = useMemo(
+    () => runsQuery.data ?? [],
+    [runsQuery.data],
+  );
 
   // Run mutation
   const runMutation = useMutation({
@@ -128,8 +139,9 @@ function ScrapePage() {
       setSelectedRunId(res.run_id);
       qc.invalidateQueries({ queryKey: ["scraper", "runs"] });
     },
-    onError: (e: any) => {
-      toast.error(`Failed to start scraper: ${e?.message ?? "unknown error"}`);
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "unknown error";
+      toast.error(`Failed to start scraper: ${message}`);
     },
   });
 
@@ -169,6 +181,21 @@ function ScrapePage() {
     (r) =>
       (historyFilter.source === "All" || r.scraper_type === historyFilter.source) &&
       (historyFilter.area === "All" || runAreas(r).includes(historyFilter.area)),
+  );
+  const paginatedRuns = paginate(filteredRuns, historyPage, historyPageSize);
+  const runHealthGroups = useMemo(() => groupFailedRuns(runs), [runs]);
+  const unknownPatternNumbers = useMemo(
+    () =>
+      new Map(
+        runHealthGroups
+          .filter((group) => group.key === "unknown")
+          .map((group, index) => [group.groupKey, index + 1]),
+      ),
+    [runHealthGroups],
+  );
+  const failedRunCount = runHealthGroups.reduce(
+    (total, group) => total + group.runs.length,
+    0,
   );
 
   const anyRunning = runs.some((r) => r.status === "running");
@@ -465,11 +492,23 @@ function ScrapePage() {
           </div>
           <div className="flex items-center gap-2">
             <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Filter className="h-3.5 w-3.5" /> Filter</div>
-            <select value={historyFilter.source} onChange={(e) => setHistoryFilter((f) => ({ ...f, source: e.target.value }))}
+            <select
+              aria-label="Filter history by source"
+              value={historyFilter.source}
+              onChange={(e) => {
+                setHistoryFilter((f) => ({ ...f, source: e.target.value }));
+                setHistoryPage(1);
+              }}
               className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium">
               <option>All</option>{SCRAPERS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
-            <select value={historyFilter.area} onChange={(e) => setHistoryFilter((f) => ({ ...f, area: e.target.value }))}
+            <select
+              aria-label="Filter history by area"
+              value={historyFilter.area}
+              onChange={(e) => {
+                setHistoryFilter((f) => ({ ...f, area: e.target.value }));
+                setHistoryPage(1);
+              }}
               className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium">
               <option>All</option>
               {Array.from(new Set(runs.flatMap((r) => (r.areas ?? (r.area ? [r.area] : []))))).map((a) => (
@@ -488,7 +527,7 @@ function ScrapePage() {
               </tr>
             </thead>
             <tbody>
-              {filteredRuns.map((r) => {
+              {paginatedRuns.items.map((r) => {
                 const start = runStartedAt(r);
                 return (
                   <tr key={r.id} onClick={() => setSelectedRunId(r.id)}
@@ -517,44 +556,204 @@ function ScrapePage() {
             </tbody>
           </table>
         </div>
+        {!runsQuery.isLoading && filteredRuns.length > 0 && (
+          <PaginationFooter
+            pagination={paginatedRuns}
+            itemLabel="runs"
+            onPageChange={setHistoryPage}
+            onPageSizeChange={(pageSize) => {
+              setHistoryPageSize(pageSize);
+              setHistoryPage(1);
+            }}
+          />
+        )}
       </section>
 
       {/* SECTION 4b: Drill-down records audit */}
       {selectedRunId != null && <RunRecordsPanel runId={selectedRunId} />}
 
 
-      {/* SECTION 5: Errors / failed runs */}
-      {runs.some((r) => r.status === "failed") && (
-        <section className="rounded-xl border border-border bg-card shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-8 w-8 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center">
-              <FileWarning className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold">Failed Runs</div>
-              <div className="text-xs text-muted-foreground">
-                {runs.filter((r) => r.status === "failed").length} failed scrapes
-              </div>
+      {/* SECTION 5: Run health */}
+      <section className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+          <div
+            className={`h-9 w-9 rounded-lg flex items-center justify-center ${
+              failedRunCount > 0
+                ? "bg-destructive/10 text-destructive"
+                : "bg-success/15 text-success"
+            }`}
+          >
+            {failedRunCount > 0 ? (
+              <AlertTriangle className="h-4 w-4" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+          </div>
+          <div>
+            <div className="text-sm font-semibold">Run health</div>
+            <div className="text-xs text-muted-foreground">
+              {failedRunCount > 0
+                ? `${failedRunCount} failed run${failedRunCount === 1 ? "" : "s"} across ${runHealthGroups.length} issue${runHealthGroups.length === 1 ? "" : "s"} in recent history`
+                : "No failures in recent history"}
             </div>
           </div>
-          <div className="space-y-2">
-            {runs.filter((r) => r.status === "failed").slice(0, 5).map((r) => (
-              <div key={r.id} className="rounded-lg border border-border bg-background p-3 flex items-start gap-3">
-                <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium capitalize">
-                    {r.scraper_type} · {runAreas(r)}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {runStartedAt(r) ? fmtTime(runStartedAt(r)!) : "—"}
-                    {r.error ? <> · <span className="text-destructive">{r.error}</span></> : null}
+        </div>
+
+        {failedRunCount === 0 ? (
+          <div className="px-5 py-5 text-sm text-muted-foreground">
+            The recent scraper history returned by the server is healthy.
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {runHealthGroups.map((group) => {
+              const latestStart = runStartedAt(group.latestRun);
+              return (
+                <div key={group.groupKey} className="px-5 py-4">
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="text-sm font-semibold">
+                            {group.key === "unknown"
+                              ? `${group.label} · Pattern ${unknownPatternNumbers.get(group.groupKey)}`
+                              : group.label}
+                          </div>
+                          <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+                            {group.runs.length} run{group.runs.length === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {group.explanation}
+                        </p>
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          Latest:{" "}
+                          <span className="font-medium text-foreground capitalize">
+                            {group.latestRun.scraper_type} · {runAreas(group.latestRun)}
+                          </span>
+                          {latestStart ? ` · ${fmtTime(latestStart)}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <details className="group">
+                      <summary className="cursor-pointer list-none rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <span className="inline-flex items-center gap-1.5">
+                          <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+                          Technical details
+                        </span>
+                      </summary>
+                      <div className="mt-3 space-y-2 md:max-w-3xl">
+                        {group.runs.map((run) => {
+                          const started = runStartedAt(run);
+                          return (
+                            <div key={run.id} className="rounded-md bg-muted/50 p-3">
+                              <div className="text-xs font-semibold capitalize">
+                                Run #{run.id} · {run.scraper_type} · {runAreas(run)}
+                              </div>
+                              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                                {started ? fmtTime(started) : "Time unavailable"}
+                              </div>
+                              <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-destructive">
+                                {run.error || "No technical error details were returned."}
+                              </pre>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </details>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </section>
-      )}
+        )}
+        <div className="border-t border-border bg-muted/20 px-5 py-2.5 text-[11px] text-muted-foreground">
+          Based on the recent history window returned by the server (up to 50 runs).
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PaginationFooter({
+  pagination,
+  itemLabel,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    from: number;
+    to: number;
+  };
+  itemLabel: string;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}) {
+  return (
+    <div className="border-t border-border px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span>
+          Showing <span className="font-semibold text-foreground tabular-nums">{pagination.from}–{pagination.to}</span>{" "}
+          of <span className="font-semibold text-foreground tabular-nums">{pagination.totalItems}</span> {itemLabel}
+        </span>
+        <label className="inline-flex items-center gap-2">
+          Rows
+          <select
+            aria-label={`Rows per page for ${itemLabel}`}
+            value={pagination.pageSize}
+            onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground"
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <nav aria-label={`Pagination for ${itemLabel}`} className="flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-label={`Previous page of ${itemLabel}`}
+          disabled={pagination.page === 1}
+          onClick={() => onPageChange(pagination.page - 1)}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+        {paginationItems(pagination.totalPages, pagination.page).map((item, index) =>
+          item === "ellipsis" ? (
+            <span key={`ellipsis-${index}`} aria-hidden="true" className="px-1 text-xs text-muted-foreground">…</span>
+          ) : (
+            <button
+              key={item}
+              type="button"
+              aria-label={`Page ${item} of ${itemLabel}`}
+              aria-current={item === pagination.page ? "page" : undefined}
+              onClick={() => onPageChange(item)}
+              className={`inline-flex h-8 min-w-8 items-center justify-center rounded-md border px-2 text-xs font-semibold ${
+                item === pagination.page
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              {item}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          aria-label={`Next page of ${itemLabel}`}
+          disabled={pagination.page === pagination.totalPages}
+          onClick={() => onPageChange(pagination.page + 1)}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </nav>
     </div>
   );
 }
@@ -594,10 +793,16 @@ const TAB_STYLES: Record<TabKey, { active: string; idle: string; label: string; 
 
 function RunRecordsPanel({ runId }: { runId: number }) {
   const [tab, setTab] = useState<TabKey>("rejected");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
   const q = useQuery({
     queryKey: ["scraper", "records", runId],
     queryFn: () => scraperApi.records(runId),
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [runId]);
 
   const data = q.data;
   const counts = {
@@ -606,6 +811,7 @@ function RunRecordsPanel({ runId }: { runId: number }) {
     duplicate: data?.summary?.duplicate ?? 0,
   };
   const records = (data?.records ?? []).filter((r) => r.outcome === tab);
+  const paginatedRecords = paginate(records, page, pageSize);
 
   return (
     <section className="rounded-xl border border-border bg-card shadow-sm">
@@ -623,7 +829,10 @@ function RunRecordsPanel({ runId }: { runId: number }) {
             return (
               <button
                 key={k}
-                onClick={() => setTab(k)}
+                onClick={() => {
+                  setTab(k);
+                  setPage(1);
+                }}
                 className={`inline-flex items-center gap-1.5 rounded-md border px-3 h-8 text-xs font-semibold transition-colors ${
                   active ? s.active : `border-transparent ${s.idle}`
                 }`}
@@ -659,7 +868,7 @@ function RunRecordsPanel({ runId }: { runId: number }) {
                 No {TAB_STYLES[tab].label.toLowerCase()} records for this run.
               </td></tr>
             )}
-            {records.map((r) => (
+            {paginatedRecords.items.map((r) => (
               <tr key={r.id} className="border-t border-border hover:bg-accent/40">
                 <td className="px-4 py-2.5 font-medium">{r.name}</td>
                 <td className="px-4 py-2.5">{r.area || "—"}</td>
@@ -680,6 +889,17 @@ function RunRecordsPanel({ runId }: { runId: number }) {
           </tbody>
         </table>
       </div>
+      {!q.isLoading && !q.isError && records.length > 0 && (
+        <PaginationFooter
+          pagination={paginatedRecords}
+          itemLabel={tab === "duplicate" ? "duplicate records" : `${tab} records`}
+          onPageChange={setPage}
+          onPageSizeChange={(nextPageSize) => {
+            setPageSize(nextPageSize);
+            setPage(1);
+          }}
+        />
+      )}
     </section>
   );
 }

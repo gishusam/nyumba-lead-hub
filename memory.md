@@ -4,6 +4,7 @@
 
 - [2026-07-27 - Dashboard and lead-table API repair](#2026-07-27---dashboard-and-lead-table-api-repair)
 - [2026-07-28 - Data Scraper pagination scope and national-location deferral](#2026-07-28---data-scraper-pagination-scope-and-national-location-deferral)
+- [2026-07-28 - Data Scraper pagination and Run Health implementation](#2026-07-28---data-scraper-pagination-and-run-health-implementation)
 
 ## 2026-07-27 - Dashboard and lead-table API repair
 
@@ -21,3 +22,13 @@
 - National locations are a separate cross-repository project, not a dropdown-only frontend change. The current worker runs locations sequentially; Apartments performs seven searches plus enrichment per location and is conservatively capped at 2, while Agencies performs two searches per location and is capped at 4. Developers ignores locations and should eventually present nationwide directory enrichment.
 - The postponed work must replace hard-coded `Nairobi` query suffixes with `Kenya`, preserve structured locations without comma-join/split corruption, enforce limits in the API and UI, bundle reviewed county/KNBS location data instead of calling a runtime government API, and redesign the 12-zone visualization for national scale. The complete fresh-agent prompt is `docs/handoffs/2026-07-28-scraper-control-center-national-locations-prompt.md`.
 - `/api/scraper/runs` currently returns at most 50 rows. Until a lifetime aggregate contract is deliberately added, history pagination, Run Health counts, and scrape KPIs derived from that response describe recent loaded runs rather than all-time history.
+
+## 2026-07-28 - Data Scraper pagination and Run Health implementation
+
+- Scrape Run History now paginates the already-filtered recent run window with a default of 5 rows and a 5/10-row selector. Source, area, and page-size changes return to page 1; derived pagination clamps safely when the result count shrinks.
+- Record Audit independently paginates each imported, rejected, or duplicate outcome after filtering, defaults to 5 rows, offers 5/10 rows, and resets to page 1 when the selected run, outcome, or page size changes.
+- The old raw Failed Runs list is now Run Health. Known timeout, database-capacity, source/network, and access failures are translated into plain language. Unknown errors are normalized and fingerprinted into distinct numbered patterns, while every original backend error remains available in collapsed Technical details.
+- No scraper backend route, payload, response, control-center control, area map, selected-run card, or pipeline visualization changed. Regression coverage preserves `GET /api/scraper/runs`, `GET /api/scraper/runs/{id}/records`, and `POST /api/scraper/run` with `{ scraper_type, areas }`.
+- Verification: 12 Node tests pass; the scoped ESLint check passes with only the repository-wide CRLF Prettier rule disabled; the production Vite build succeeds. Repository-wide `npm run lint` remains blocked by the pre-existing LF/CRLF mismatch across untouched files.
+- Real-data browser QA at `http://127.0.0.1:5000/scrape` used the Vite proxy and authenticated production data: 43 recent runs loaded over HTTP 200, Run #45 returned its audit over HTTP 200, history showed 5 then 10 rows, audit tabs and pages reset correctly, and raw timeout details remained intact. The full-width visual evidence is `C:\Users\akioko.INDRALIMITED\.codex\visualizations\2026\07\28\019faa11-5db1-7be3-8e91-49ddf635a64e\scraper-pagination-run-health-full.png`.
+- The separate fresh-agent implementation prompt for the postponed Scraper Control Center and national-scale visualization remains `docs/handoffs/2026-07-28-scraper-control-center-national-locations-prompt.md`.
