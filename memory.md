@@ -5,6 +5,7 @@
 - [2026-07-27 - Dashboard and lead-table API repair](#2026-07-27---dashboard-and-lead-table-api-repair)
 - [2026-07-28 - Data Scraper pagination scope and national-location deferral](#2026-07-28---data-scraper-pagination-scope-and-national-location-deferral)
 - [2026-07-28 - Data Scraper pagination and Run Health implementation](#2026-07-28---data-scraper-pagination-and-run-health-implementation)
+- [2026-07-29 - Canonical design-system reference](#2026-07-29---canonical-design-system-reference)
 
 ## 2026-07-27 - Dashboard and lead-table API repair
 
@@ -32,3 +33,8 @@
 - Verification: 12 Node tests pass; the scoped ESLint check passes with only the repository-wide CRLF Prettier rule disabled; the production Vite build succeeds. Repository-wide `npm run lint` remains blocked by the pre-existing LF/CRLF mismatch across untouched files.
 - Real-data browser QA at `http://127.0.0.1:5000/scrape` used the Vite proxy and authenticated production data: 43 recent runs loaded over HTTP 200, Run #45 returned its audit over HTTP 200, history showed 5 then 10 rows, audit tabs and pages reset correctly, and raw timeout details remained intact. The full-width visual evidence is `C:\Users\akioko.INDRALIMITED\.codex\visualizations\2026\07\28\019faa11-5db1-7be3-8e91-49ddf635a64e\scraper-pagination-run-health-full.png`.
 - The separate fresh-agent implementation prompt for the postponed Scraper Control Center and national-scale visualization remains `docs/handoffs/2026-07-28-scraper-control-center-national-locations-prompt.md`.
+
+## 2026-07-29 - Canonical design-system reference
+
+- `docs/design-system.md` is the locked reference for Nyumba Zetu's visual tokens, typography, spacing, primitives, scraper semantic colors, and coverage-honesty rules.
+- New scraper and command-center work should reuse the existing shadcn primitives and the documented semantic mapping instead of introducing parallel hand-rolled UI patterns.
