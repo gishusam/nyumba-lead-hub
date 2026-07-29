@@ -1,0 +1,928 @@
+<title>Command Center — Three High-Fidelity Directions</title>
+<style>
+  :root {
+    --radius: 0.75rem;
+    --background: oklch(0.995 0.002 240);
+    --foreground: oklch(0.18 0.03 250);
+    --card: oklch(1 0 0);
+    --primary: oklch(0.45 0.13 165);
+    --primary-foreground: oklch(0.99 0.005 160);
+    --secondary: oklch(0.965 0.01 250);
+    --muted: oklch(0.97 0.008 250);
+    --muted-foreground: oklch(0.5 0.02 250);
+    --accent: oklch(0.95 0.04 170);
+    --accent-foreground: oklch(0.25 0.08 165);
+    --destructive: oklch(0.6 0.22 25);
+    --success: oklch(0.66 0.16 155);
+    --warning: oklch(0.78 0.16 70);
+    --warning-ink: oklch(0.42 0.11 70);
+    --info: oklch(0.62 0.16 245);
+    --border: oklch(0.92 0.01 250);
+
+    --r-md: calc(var(--radius) - 2px);
+    --r-lg: var(--radius);
+    --r-xl: calc(var(--radius) + 4px);
+
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --disp: "Plus Jakarta Sans", "Inter", ui-sans-serif, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+    --fresh-bg: color-mix(in oklab, var(--success) 17%, white);
+    --fresh-bd: color-mix(in oklab, var(--success) 42%, white);
+    --fresh-ink: color-mix(in oklab, var(--success) 76%, black);
+    --stale-bg: color-mix(in oklab, var(--warning) 24%, white);
+    --stale-bd: color-mix(in oklab, var(--warning) 50%, white);
+    --stale-ink: var(--warning-ink);
+    --none-bg: var(--muted);
+    --none-bd: var(--border);
+    --none-ink: var(--muted-foreground);
+
+    --ink-soft: color-mix(in oklab, var(--foreground) 62%, white);
+    --shadow-sm: 0 1px 2px rgb(17 24 39 / .05);
+    --shadow-md: 0 4px 14px -4px rgb(17 24 39 / .10), 0 1px 3px rgb(17 24 39 / .05);
+    --shadow-lg: 0 18px 40px -18px rgb(17 24 39 / .22), 0 2px 6px rgb(17 24 39 / .05);
+
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] { color-scheme: light; }
+
+  * { box-sizing: border-box; }
+
+  .pg { background: var(--background); color: var(--foreground); font-family: var(--sans);
+        line-height: 1.5; -webkit-font-smoothing: antialiased; padding: 32px 20px 90px; }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+  h1,h2,h3,h4 { font-family: var(--disp); letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  button { font-family: inherit; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  svg.ic { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9;
+           stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  svg.ic.sm { width: 13px; height: 13px; }
+  svg.ic.lg { width: 17px; height: 17px; }
+
+  /* ---------------- page header ---------------- */
+  .phead { border-bottom: 1px solid var(--border); padding-bottom: 22px; }
+  .kick { font-size: 11px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); }
+  .plede { color: var(--muted-foreground); font-size: 14.5px; margin-top: 9px; max-width: 66ch; }
+
+  /* ---------------- tabs ---------------- */
+  .tabs { display: flex; gap: 6px; margin: 22px 0 26px; flex-wrap: wrap; }
+  .tab { display: flex; flex-direction: column; gap: 2px; text-align: left;
+         border: 1px solid var(--border); background: var(--card); cursor: pointer;
+         padding: 10px 16px; border-radius: var(--r-md); min-width: 168px;
+         transition: border-color .15s, background .15s, box-shadow .15s; }
+  .tab .tn { font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted-foreground); }
+  .tab .tt { font-family: var(--disp); font-size: 14px; font-weight: 650; }
+  .tab:hover { border-color: color-mix(in oklab, var(--primary) 35%, var(--border)); }
+  .tab[aria-selected="true"] { background: var(--primary); border-color: var(--primary); box-shadow: var(--shadow-md); }
+  .tab[aria-selected="true"] .tn { color: color-mix(in oklab, var(--primary-foreground) 72%, transparent); }
+  .tab[aria-selected="true"] .tt { color: var(--primary-foreground); }
+  .tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .panel[hidden] { display: none; }
+
+  /* ---------------- app shell mock ---------------- */
+  .app { border: 1px solid var(--border); border-radius: var(--r-xl); background: var(--card);
+         box-shadow: var(--shadow-lg); overflow: hidden; }
+  .appbar { display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+            border-bottom: 1px solid var(--border); background: var(--card); }
+  .appbar .crumb { font-size: 12.5px; color: var(--muted-foreground); }
+  .appbar .crumb b { color: var(--foreground); font-weight: 600; }
+  .appbar .spacer { margin-left: auto; }
+  .statuschip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600;
+                padding: 4px 10px; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); }
+  .statuschip .d { height: 6px; width: 6px; border-radius: 999px; background: currentColor; }
+  .appbody { background: var(--background); padding: 18px; }
+
+  /* ---------------- shared controls ---------------- */
+  .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted);
+         border: 1px solid var(--border); border-radius: var(--r-md); }
+  .seg button { display: inline-flex; align-items: center; gap: 6px; border: none; background: none;
+                cursor: pointer; height: 30px; padding: 0 12px; border-radius: 7px;
+                font-size: 12.5px; font-weight: 550; color: var(--muted-foreground); transition: background .14s, color .14s; }
+  .seg button:hover { color: var(--foreground); }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); box-shadow: var(--shadow-sm); }
+  .seg button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+  .search { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px;
+            border: 1px solid var(--border); border-radius: var(--r-md); background: var(--card);
+            color: var(--muted-foreground); font-size: 13px; min-width: 210px; box-shadow: var(--shadow-sm); }
+  .search kbd { margin-left: auto; font-family: var(--mono); font-size: 10px; border: 1px solid var(--border);
+                border-radius: 4px; padding: 1px 5px; background: var(--muted); }
+
+  .run { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px;
+         padding: 0 18px; border-radius: var(--r-md); border: none; cursor: pointer;
+         background: var(--primary); color: var(--primary-foreground); font-size: 13.5px; font-weight: 650;
+         box-shadow: 0 1px 2px rgb(17 24 39 / .14); transition: filter .15s, transform .12s; }
+  .run:hover { filter: brightness(1.07); }
+  .run:active { transform: translateY(1px); }
+  .run:disabled { opacity: .45; cursor: not-allowed; }
+  .run:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .ghost { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 11px;
+           border-radius: var(--r-md); border: 1px solid var(--border); background: var(--card);
+           font-size: 12.5px; font-weight: 550; cursor: pointer; color: var(--foreground); transition: background .14s; }
+  .ghost:hover { background: var(--accent); border-color: color-mix(in oklab, var(--primary) 28%, var(--border)); }
+
+  .capbar { display: inline-flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 600; }
+  .capbar .slots { display: flex; gap: 3px; }
+  .capbar .slots i { display: block; height: 6px; width: 22px; border-radius: 3px; background: var(--border); transition: background .18s; }
+  .capbar .slots i.on { background: var(--primary); }
+  .capbar .slots i.full { background: var(--warning); }
+
+  .sect { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+          color: var(--muted-foreground); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+
+  .legend { display: flex; gap: 13px; font-size: 11px; color: var(--muted-foreground); flex-wrap: wrap; align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { height: 8px; width: 8px; border-radius: 999px; border: 1px solid; }
+  .lg-f { background: var(--fresh-bg); border-color: var(--fresh-bd); }
+  .lg-s { background: var(--stale-bg); border-color: var(--stale-bd); }
+  .lg-n { background: var(--none-bg); border-color: var(--none-bd); }
+
+  /* ============ D1 · RUN PLANNER ============ */
+  .d1grid { display: grid; grid-template-columns: 1fr 372px; gap: 16px; }
+  @media (max-width: 940px) { .d1grid { grid-template-columns: 1fr; } }
+
+  .d1left { display: flex; flex-direction: column; gap: 14px; }
+  .ctrlrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 13px 15px; }
+
+  .board { padding: 15px; }
+  .boardhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; flex-wrap: wrap; }
+  .countyband { margin-bottom: 14px; }
+  .countyband:last-child { margin-bottom: 0; }
+  .cbtitle { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .cbtitle b { font-size: 12.5px; font-weight: 650; }
+  .cbtitle span { font-size: 11px; color: var(--muted-foreground); }
+  .cbtitle .rule { flex: 1; height: 1px; background: var(--border); }
+  .areagrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); gap: 7px; }
+  .area { position: relative; text-align: left; border: 1px solid; border-radius: 9px; padding: 9px 10px;
+          cursor: pointer; background: var(--card); transition: transform .12s, box-shadow .14s, border-color .14s; }
+  .area:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .area:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .area .an { font-size: 12.5px; font-weight: 600; display: block; }
+  .area .am { font-size: 10.5px; margin-top: 2px; display: block; }
+  .a-f { border-color: var(--fresh-bd); background: var(--fresh-bg); }
+  .a-f .an { color: var(--fresh-ink); } .a-f .am { color: color-mix(in oklab, var(--fresh-ink) 78%, white); }
+  .a-s { border-color: var(--stale-bd); background: var(--stale-bg); }
+  .a-s .an { color: var(--stale-ink); } .a-s .am { color: color-mix(in oklab, var(--stale-ink) 76%, white); }
+  .a-n { border-color: var(--none-bd); background: var(--card); }
+  .a-n .an { color: var(--foreground); } .a-n .am { color: var(--muted-foreground); }
+  .area.on { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 28%, white); }
+  .area .seq { position: absolute; top: -7px; right: -7px; height: 19px; width: 19px; border-radius: 999px;
+               background: var(--primary); color: var(--primary-foreground); font-size: 10.5px; font-weight: 700;
+               display: grid; place-items: center; box-shadow: var(--shadow-sm); }
+  .area.locked { opacity: .42; cursor: not-allowed; }
+  .area.locked:hover { transform: none; box-shadow: none; }
+
+  /* run plan panel */
+  .plan { padding: 16px; display: flex; flex-direction: column; gap: 0; }
+  .planhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .planhead h3 { font-size: 15px; font-weight: 700; }
+  .planhead .sub { font-size: 11.5px; color: var(--muted-foreground); margin-top: 2px; }
+
+  .stops { margin: 16px 0 4px; position: relative; }
+  .stop { display: grid; grid-template-columns: 26px 1fr auto; gap: 11px; align-items: start;
+          padding: 0 0 15px; position: relative; }
+  .stop:last-child { padding-bottom: 2px; }
+  .stop .rail { position: relative; display: flex; justify-content: center; }
+  .stop .num { height: 24px; width: 24px; border-radius: 999px; background: var(--primary);
+               color: var(--primary-foreground); font-size: 11.5px; font-weight: 700; display: grid;
+               place-items: center; z-index: 2; }
+  .stop:not(:last-child) .rail::after { content: ""; position: absolute; top: 25px; bottom: -16px;
+               width: 2px; background: linear-gradient(var(--border), var(--border)); border-radius: 2px; }
+  .stop .nm { font-size: 13.5px; font-weight: 600; }
+  .stop .mt { font-size: 11px; color: var(--muted-foreground); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .stop .est { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .stop .rm { border: none; background: none; cursor: pointer; color: var(--muted-foreground); padding: 2px; border-radius: 5px; }
+  .stop .rm:hover { color: var(--destructive); background: color-mix(in oklab, var(--destructive) 9%, white); }
+
+  .budget { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .budrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .budrow .k { font-size: 12px; color: var(--muted-foreground); }
+  .budrow .v { font-family: var(--disp); font-size: 21px; font-weight: 700; }
+  .track { height: 9px; border-radius: 999px; background: var(--muted); margin-top: 10px;
+           position: relative; overflow: hidden; border: 1px solid var(--border); }
+  .track .fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--primary);
+                 transition: width .35s cubic-bezier(.4,0,.2,1), background .25s; }
+  .track .limit { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--destructive); opacity: .55; }
+  .budmeta { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted-foreground); margin-top: 6px; }
+  .verdict { display: flex; gap: 8px; align-items: flex-start; font-size: 11.5px; padding: 9px 11px;
+             border-radius: 8px; margin-top: 12px; border: 1px solid; }
+  .v-ok { background: var(--fresh-bg); border-color: var(--fresh-bd); color: var(--fresh-ink); }
+  .v-warn { background: var(--stale-bg); border-color: var(--stale-bd); color: var(--stale-ink); }
+  .v-bad { background: color-mix(in oklab, var(--destructive) 10%, white);
+           border-color: color-mix(in oklab, var(--destructive) 32%, white);
+           color: color-mix(in oklab, var(--destructive) 74%, black); }
+  .planempty { padding: 30px 12px; text-align: center; color: var(--muted-foreground); font-size: 12.5px; }
+
+  /* ============ D2 · CONSTELLATION ============ */
+  .d2grid { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+  @media (max-width: 940px) { .d2grid { grid-template-columns: 1fr; } }
+  .mapcard { overflow: hidden; }
+  .maphead { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+             padding: 11px 15px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .maphead .t { font-size: 12.5px; font-weight: 650; display: flex; align-items: center; gap: 7px; }
+  .mapsurface { position: relative; background:
+      radial-gradient(120% 90% at 50% 12%, color-mix(in oklab, var(--accent) 42%, white) 0%, var(--card) 62%); }
+  .node { cursor: pointer; }
+  .node .halo { opacity: 0; transition: opacity .2s; }
+  .node:hover .halo { opacity: .5; }
+  .node.on .halo { opacity: 1; }
+  .node circle.core { transition: r .18s cubic-bezier(.4,0,.2,1), fill .18s; }
+  .node text { font-family: var(--sans); pointer-events: none; }
+  .node:focus-visible { outline: none; }
+  .node:focus-visible circle.core { stroke: var(--primary); stroke-width: 3; }
+  @media (prefers-reduced-motion: reduce) { .node circle.core, .track .fill { transition: none; } }
+
+  .minipanel { padding: 14px 15px; }
+  .miniK { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .kbox { border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; }
+  .kbox .n { font-size: 18px; font-weight: 700; }
+  .kbox .l { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); margin-top: 1px; }
+  .t-succ { color: var(--fresh-ink); } .t-info { color: color-mix(in oklab, var(--info) 80%, black); }
+  .t-warn { color: var(--stale-ink); } .t-bad { color: color-mix(in oklab, var(--destructive) 76%, black); }
+
+  .traychips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; min-height: 26px; }
+  .tchip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 5px 4px 11px;
+           background: var(--accent); color: var(--accent-foreground); font-size: 11.5px; font-weight: 600; }
+  .tchip button { border: none; background: color-mix(in oklab, var(--primary) 17%, white); cursor: pointer;
+                  height: 16px; width: 16px; border-radius: 999px; display: grid; place-items: center; color: inherit; }
+  .tchip button:hover { background: color-mix(in oklab, var(--primary) 30%, white); }
+
+  .natstrip { display: flex; align-items: center; gap: 12px; padding: 11px 15px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .hexrow { display: flex; gap: 2px; align-items: center; }
+  .hexcell { width: 15px; height: 17px; clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); }
+
+  /* ============ D3 · CONSOLE ============ */
+  .d3grid { display: grid; grid-template-columns: 218px 1fr 296px; gap: 14px; }
+  @media (max-width: 1080px) { .d3grid { grid-template-columns: 1fr 296px; } .d3rail { display: none; } }
+  @media (max-width: 820px) { .d3grid { grid-template-columns: 1fr; } }
+  .rail { padding: 12px; }
+  .railitem { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px;
+              cursor: pointer; font-size: 12.5px; transition: background .13s; border: none; background: none;
+              width: 100%; text-align: left; color: var(--foreground); }
+  .railitem:hover { background: var(--muted); }
+  .railitem[aria-current="true"] { background: var(--accent); color: var(--accent-foreground); font-weight: 650; }
+  .railitem .bar { margin-left: auto; display: flex; gap: 2px; }
+  .railitem .bar i { height: 14px; width: 3px; border-radius: 2px; background: var(--border); }
+  .railitem .bar i.f { background: var(--success); } .railitem .bar i.s { background: var(--warning); }
+  .railitem .ct { font-size: 10.5px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+
+  .heatwrap { padding: 14px 15px; }
+  .heatgrid { display: grid; grid-template-columns: 128px repeat(3, 1fr); gap: 4px; align-items: center; }
+  .hh { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+        color: var(--muted-foreground); padding-bottom: 4px; text-align: center; }
+  .hh:first-child { text-align: left; }
+  .hlabel { font-size: 12px; font-weight: 550; padding: 5px 0; }
+  .hlabel small { display: block; font-size: 10px; color: var(--muted-foreground); font-weight: 400; }
+  .hcell { border-radius: 6px; border: 1px solid; padding: 7px 4px; text-align: center; font-size: 12px;
+           font-weight: 700; cursor: pointer; transition: transform .12s; }
+  .hcell:hover { transform: scale(1.04); }
+  .hcell small { display: block; font-size: 9.5px; font-weight: 500; opacity: .8; }
+  .h-f { background: var(--fresh-bg); border-color: var(--fresh-bd); color: var(--fresh-ink); }
+  .h-s { background: var(--stale-bg); border-color: var(--stale-bd); color: var(--stale-ink); }
+  .h-n { background: var(--none-bg); border-color: var(--none-bd); color: var(--none-ink); }
+  .h-na { background: repeating-linear-gradient(45deg, var(--muted), var(--muted) 4px, var(--card) 4px, var(--card) 8px);
+          border-color: var(--border); color: var(--muted-foreground); font-weight: 500; font-size: 10px; }
+
+  .stale-strip { display: flex; align-items: center; gap: 11px; padding: 10px 14px;
+                 background: var(--stale-bg); border: 1px solid var(--stale-bd); border-radius: var(--r-md);
+                 font-size: 12.5px; color: var(--stale-ink); flex-wrap: wrap; }
+  .stale-strip b { font-weight: 700; }
+  .stale-strip .go { margin-left: auto; border: 1px solid var(--stale-bd); background: var(--card);
+                     color: var(--stale-ink); border-radius: 7px; height: 28px; padding: 0 11px;
+                     font-size: 12px; font-weight: 650; cursor: pointer; }
+  .stale-strip .go:hover { background: white; }
+
+  .funnel { display: flex; align-items: stretch; gap: 4px; margin-top: 11px; }
+  .fstep { flex: 1; border-radius: 7px; padding: 9px 4px; text-align: center; }
+  .fstep .n { font-size: 16px; font-weight: 700; } .fstep .l { font-size: 9.5px; margin-top: 1px; opacity: .82; font-weight: 550; }
+  .f-n { background: var(--muted); color: var(--foreground); }
+  .f-i { background: color-mix(in oklab, var(--info) 12%, white); color: color-mix(in oklab, var(--info) 80%, black); }
+  .f-s { background: var(--fresh-bg); color: var(--fresh-ink); }
+  .f-d { background: color-mix(in oklab, var(--destructive) 11%, white); color: color-mix(in oklab, var(--destructive) 76%, black); }
+
+  .logline { display: grid; grid-template-columns: 52px 1fr auto; gap: 9px; align-items: center;
+             padding: 6px 0; border-top: 1px solid var(--border); font-size: 11.5px; }
+  .logline .tm { font-family: var(--mono); font-size: 10.5px; color: var(--muted-foreground); }
+  .logline .st { font-size: 10px; font-weight: 700; padding: 1.5px 7px; border-radius: 999px; }
+  .ls-ok { background: var(--fresh-bg); color: var(--fresh-ink); }
+  .ls-bad { background: color-mix(in oklab, var(--destructive) 12%, white); color: color-mix(in oklab, var(--destructive) 74%, black); }
+
+  /* ---------------- rationale ---------------- */
+  .why { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 860px) { .why { grid-template-columns: 1fr; } }
+  .wbox { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--card); padding: 13px 15px; }
+  .wbox h4 { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 7px; }
+  .wbox.hero h4 { color: var(--primary); }
+  .wbox.good h4 { color: var(--fresh-ink); }
+  .wbox.cost h4 { color: var(--stale-ink); }
+  .wbox p, .wbox li { font-size: 12.5px; color: var(--muted-foreground); }
+  .wbox ul { margin: 0; padding-left: 15px; } .wbox li { margin-bottom: 3px; }
+
+  .foot { margin-top: 46px; padding-top: 18px; border-top: 1px solid var(--border);
+          font-size: 12px; color: var(--muted-foreground); }
+  .foot code { font-family: var(--mono); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-play"><polygon points="7 4 19 12 7 20 7 4" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></g>
+  <g id="i-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></g>
+  <g id="i-search"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></g>
+  <g id="i-clock"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></g>
+  <g id="i-x"><path d="M18 6 6 18M6 6l12 12"/></g>
+  <g id="i-check"><path d="M20 6 9 17l-5-5"/></g>
+  <g id="i-alert"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></g>
+  <g id="i-layers"><path d="M12 2 2 8l10 6 10-6-10-6z"/><path d="M2 16l10 6 10-6"/></g>
+  <g id="i-grid"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></g>
+  <g id="i-refresh"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></g>
+  <g id="i-build"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M9 16h.01M15 16h.01"/></g>
+  <g id="i-case"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></g>
+  <g id="i-hat"><path d="M2 18h20"/><path d="M4 18l4-9h8l4 9"/><path d="M12 4v5"/></g>
+</defs></svg>
+
+<div class="pg"><div class="wrap">
+
+  <header class="phead">
+    <div class="kick">Nyumba Zetu · High-fidelity direction study</div>
+    <h1 style="font-size:29px;margin-top:7px;">Three ways to see what you're about to run</h1>
+    <p class="plede">Each screen is interactive — pick areas and watch the selection visual respond. All three obey
+      the locked design system and the same hard constraint: <b>2 areas for Apartments, 4 for Agencies</b>, run
+      sequentially inside a 15-minute worker ceiling.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Design directions">
+    <button class="tab" role="tab" id="tab-1" aria-controls="p1" aria-selected="true">
+      <span class="tn">Direction 01</span><span class="tt">Run Planner</span></button>
+    <button class="tab" role="tab" id="tab-2" aria-controls="p2" aria-selected="false">
+      <span class="tn">Direction 02</span><span class="tt">Constellation Map</span></button>
+    <button class="tab" role="tab" id="tab-3" aria-controls="p3" aria-selected="false">
+      <span class="tn">Direction 03</span><span class="tt">Operations Console</span></button>
+  </div>
+
+  <!-- ===================== D1 ===================== -->
+  <section class="panel" id="p1" role="tabpanel" aria-labelledby="tab-1">
+    <div class="app">
+      <div class="appbar">
+        <svg class="ic lg" viewBox="0 0 24 24" style="color:var(--primary)"><use href="#i-pin"/></svg>
+        <span class="crumb">Lead Operations · <b>Acquisition Pipeline</b></span>
+        <span class="spacer"></span>
+        <span class="statuschip"><span class="d"></span>Idle</span>
+      </div>
+      <div class="appbody">
+        <div class="d1grid">
+          <div class="d1left">
+            <div class="card ctrlrow">
+              <div class="seg" role="group" aria-label="Source type">
+                <button data-src="apartments" aria-pressed="true"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-build"/></svg>Apartments</button>
+                <button data-src="agencies" aria-pressed="false"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-case"/></svg>Agencies</button>
+                <button data-src="developers" aria-pressed="false"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-hat"/></svg>Developers</button>
+              </div>
+              <div class="search"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-search"/></svg>Search 47 counties…<kbd>⌘K</kbd></div>
+              <div class="capbar" style="margin-left:auto;">
+                <span id="d1cap" class="tnum">0 / 2 areas</span>
+                <span class="slots" id="d1slots"></span>
+              </div>
+            </div>
+
+            <div class="card board">
+              <div class="boardhead">
+                <div>
+                  <div class="sect">Working region</div>
+                  <div style="font-family:var(--disp);font-size:15px;font-weight:700;margin-top:2px;">Nairobi Metro</div>
+                </div>
+                <div class="legend">
+                  <span><i class="lg-f"></i>Fresh</span><span><i class="lg-s"></i>Stale</span><span><i class="lg-n"></i>No recent runs</span>
+                </div>
+              </div>
+              <div id="d1board"></div>
+            </div>
+          </div>
+
+          <div class="card plan">
+            <div class="planhead">
+              <div>
+                <h3>Run plan</h3>
+                <div class="sub">Areas execute one after another</div>
+              </div>
+              <span class="statuschip" style="background:var(--accent);color:var(--accent-foreground)">
+                <svg class="ic sm" viewBox="0 0 24 24"><use href="#i-clock"/></svg>sequential</span>
+            </div>
+            <div class="stops" id="d1stops"></div>
+            <div class="budget" id="d1budget"></div>
+            <button class="run" id="d1run" style="margin-top:14px;width:100%;">
+              <svg class="ic" viewBox="0 0 24 24"><use href="#i-play"/></svg><span id="d1runlabel">Select an area to run</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="why">
+      <div class="wbox hero"><h4>The idea</h4><p>The selection visual isn't a map — it's a <b>flight plan</b>.
+        Because areas run sequentially against a hard worker ceiling, the most valuable thing to show is
+        <b>whether your selection actually fits in time</b>. Nothing in the product surfaces this today.</p></div>
+      <div class="wbox good"><h4>Why it works</h4><ul>
+        <li>Turns an invisible backend limit into a visible, live gauge</li>
+        <li>Order is explicit — you see what runs first</li>
+        <li>Warns <i>before</i> a timeout instead of failing after 12 minutes</li>
+        <li>Scales identically whether 2 areas or 40 counties exist</li></ul></div>
+      <div class="wbox cost"><h4>What it costs</h4><ul>
+        <li>Needs a per-source duration estimate to stay honest</li>
+        <li>Estimates drift — must be labelled as estimates</li>
+        <li>Least "map-like" of the three</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ===================== D2 ===================== -->
+  <section class="panel" id="p2" role="tabpanel" aria-labelledby="tab-2" hidden>
+    <div class="app">
+      <div class="appbar">
+        <svg class="ic lg" viewBox="0 0 24 24" style="color:var(--primary)"><use href="#i-pin"/></svg>
+        <span class="crumb">Lead Operations · <b>Acquisition Pipeline</b></span>
+        <span class="spacer"></span>
+        <div class="capbar"><span id="d2cap" class="tnum">0 / 2 areas</span><span class="slots" id="d2slots"></span></div>
+        <button class="run" id="d2run"><svg class="ic" viewBox="0 0 24 24"><use href="#i-play"/></svg><span id="d2runlabel">Run Scraper</span></button>
+      </div>
+      <div class="appbody">
+        <div class="d2grid">
+          <div class="card mapcard">
+            <div class="maphead">
+              <span class="t"><svg class="ic sm" viewBox="0 0 24 24" style="color:var(--primary)"><use href="#i-layers"/></svg>Nairobi Metro · relative positions</span>
+              <div class="legend"><span><i class="lg-f"></i>Fresh</span><span><i class="lg-s"></i>Stale</span><span><i class="lg-n"></i>No recent runs</span>
+                <span style="color:var(--muted-foreground)">· node size = leads found</span></div>
+            </div>
+            <div class="mapsurface">
+              <svg id="d2map" viewBox="0 0 760 470" width="100%" style="display:block" role="group" aria-label="Interactive metro area map"></svg>
+            </div>
+            <div class="natstrip">
+              <span class="sect">Kenya</span>
+              <div class="hexrow" id="d2hex"></div>
+              <span style="font-size:11.5px;color:var(--muted-foreground)">3 of 47 counties have coverage</span>
+              <button class="ghost" style="margin-left:auto;"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Browse all counties</button>
+            </div>
+          </div>
+
+          <div class="card minipanel">
+            <div class="sect">Selected</div>
+            <div class="traychips" id="d2tray"><span style="font-size:12px;color:var(--muted-foreground)">Tap a node on the map</span></div>
+
+            <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div class="sect">Last run · Ruiru</div>
+                <span class="statuschip" style="background:var(--fresh-bg);color:var(--fresh-ink)">
+                  <svg class="ic sm" viewBox="0 0 24 24"><use href="#i-check"/></svg>Success</span>
+              </div>
+              <div class="miniK">
+                <div class="kbox"><div class="n tnum">65</div><div class="l">Found</div></div>
+                <div class="kbox"><div class="n tnum t-info">9</div><div class="l">With contact</div></div>
+                <div class="kbox"><div class="n tnum t-succ">0</div><div class="l">Imported</div></div>
+                <div class="kbox"><div class="n tnum t-warn">20</div><div class="l">Duplicates</div></div>
+              </div>
+              <div style="display:flex;gap:7px;margin-top:11px;">
+                <button class="ghost" style="flex:1;justify-content:center;"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-refresh"/></svg>Re-run</button>
+                <button class="ghost" style="flex:1;justify-content:center;">View records</button>
+              </div>
+              <div style="font-size:11px;color:var(--muted-foreground);margin-top:11px;display:flex;justify-content:space-between;">
+                <span>27 Jul, 20:15</span><span class="tnum">4m 12s</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="why">
+      <div class="wbox hero"><h4>The idea</h4><p>A map that's <b>honest</b>. Areas sit at their true relative
+        positions as nodes — no invented polygons pretending to be borders. Size encodes leads found, colour
+        encodes freshness, and selection draws the run path between them.</p></div>
+      <div class="wbox good"><h4>Why it works</h4><ul>
+        <li>Replaces today's fake rectangles with real spatial relationships</li>
+        <li>Selection is unmistakable — lit nodes, traced path</li>
+        <li>Shows yield and freshness in one mark</li>
+        <li>National hex strip keeps expansion in view without lying about area</li></ul></div>
+      <div class="wbox cost"><h4>What it costs</h4><ul>
+        <li>Needs hand-placed coordinates per area</li>
+        <li>Dense metro clusters need collision handling</li>
+        <li>Requires a list equivalent for keyboard/screen-reader parity</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ===================== D3 ===================== -->
+  <section class="panel" id="p3" role="tabpanel" aria-labelledby="tab-3" hidden>
+    <div class="app">
+      <div class="appbar">
+        <svg class="ic lg" viewBox="0 0 24 24" style="color:var(--primary)"><use href="#i-pin"/></svg>
+        <span class="crumb">Lead Operations · <b>Acquisition Pipeline</b></span>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="Source type">
+          <button aria-pressed="true"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-build"/></svg>Apartments</button>
+          <button aria-pressed="false"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-case"/></svg>Agencies</button>
+          <button aria-pressed="false"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-hat"/></svg>Developers</button>
+        </div>
+      </div>
+      <div class="appbody">
+        <div class="stale-strip" style="margin-bottom:14px;">
+          <svg class="ic" viewBox="0 0 24 24"><use href="#i-alert"/></svg>
+          <span><b>2 areas have gone stale.</b> Runda (26d) and Thika (21d) haven't been scraped this month.</span>
+          <button class="go">Queue both</button>
+        </div>
+
+        <div class="d3grid">
+          <div class="card rail d3rail">
+            <div class="sect" style="padding:2px 9px 8px;">Counties · 47</div>
+            <div class="search" style="margin:0 4px 9px;min-width:0;height:30px;font-size:12px;">
+              <svg class="ic sm" viewBox="0 0 24 24"><use href="#i-search"/></svg>Filter…</div>
+            <div id="d3rail"></div>
+          </div>
+
+          <div class="card heatwrap">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+              <div><div class="sect">Coverage board</div>
+                <div style="font-size:11.5px;color:var(--muted-foreground);margin-top:2px;">Across the loaded run window</div></div>
+              <div class="legend"><span><i class="lg-f"></i>Fresh</span><span><i class="lg-s"></i>Stale</span><span><i class="lg-n"></i>None</span></div>
+            </div>
+            <div class="heatgrid" id="d3heat"></div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+              <div class="sect" style="margin-bottom:7px;">Recent runs</div>
+              <div class="logline"><span class="tm">20:15</span><span>Apartments · Ruiru</span><span class="st ls-ok">65 found</span></div>
+              <div class="logline"><span class="tm">19:42</span><span>Apartments · Westlands</span><span class="st ls-ok">88 found</span></div>
+              <div class="logline"><span class="tm">18:03</span><span>Agencies · Nairobi CBD</span><span class="st ls-bad">timeout</span></div>
+            </div>
+          </div>
+
+          <div class="card" style="padding:15px;">
+            <div class="sect">Queue</div>
+            <div class="traychips" id="d3tray"></div>
+            <div class="capbar" style="margin-top:12px;">
+              <span id="d3cap" class="tnum">0 / 2 areas</span><span class="slots" id="d3slots"></span></div>
+            <div id="d3budget" style="margin-top:12px;"></div>
+            <button class="run" id="d3run" style="margin-top:12px;width:100%;">
+              <svg class="ic" viewBox="0 0 24 24"><use href="#i-play"/></svg><span id="d3runlabel">Run Scraper</span></button>
+
+            <div style="margin-top:16px;padding-top:13px;border-top:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div class="sect">Last run</div>
+                <span style="font-size:10.5px;color:var(--muted-foreground)" class="tnum">4m 12s</span></div>
+              <div class="funnel">
+                <div class="fstep f-n"><div class="n tnum">65</div><div class="l">Found</div></div>
+                <div class="fstep f-i"><div class="n tnum">9</div><div class="l">Contact</div></div>
+                <div class="fstep f-s"><div class="n tnum">0</div><div class="l">Imported</div></div>
+                <div class="fstep f-d"><div class="n tnum">45</div><div class="l">Rejected</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="why">
+      <div class="wbox hero"><h4>The idea</h4><p>A <b>control room</b>, not a page. Counties, coverage, queue,
+        budget, run health and last-run outcome all visible without scrolling. The stale strip at the top does the
+        thinking for you: it names what decayed and offers a one-click queue.</p></div>
+      <div class="wbox good"><h4>Why it works</h4><ul>
+        <li>Zero scrolling — the whole decision fits one screen</li>
+        <li>Cross-source gaps are obvious in the board</li>
+        <li>Proactive: tells you what to run instead of waiting to be asked</li>
+        <li>Cheapest to build — no coordinates, no geo data</li></ul></div>
+      <div class="wbox cost"><h4>What it costs</h4><ul>
+        <li>Densest — needs real discipline to avoid feeling busy</li>
+        <li>No spatial intuition at all</li>
+        <li>Three-column layout collapses awkwardly under 1080px</li></ul></div>
+    </div>
+  </section>
+
+  <div class="foot">Interactive study · built on the locked design system (<code>docs/design-system.md</code>).
+    Duration estimates use the verified figure of ~253s per apartments location against the 720s subprocess ceiling.
+    Map coordinates are true relative positions, not survey-accurate geography.</div>
+
+</div></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var AREAS = [
+    { id:"westlands", n:"Westlands",  c:"Nairobi",  s:"f", age:"2d",  leads:88, x:398, y:236 },
+    { id:"parklands", n:"Parklands",  c:"Nairobi",  s:"f", age:"2d",  leads:71, x:441, y:190 },
+    { id:"lavington", n:"Lavington",  c:"Nairobi",  s:"f", age:"4d",  leads:64, x:334, y:300 },
+    { id:"kilimani",  n:"Kilimani",   c:"Nairobi",  s:"n", age:"",    leads:0,  x:398, y:342 },
+    { id:"upperhill", n:"Upper Hill", c:"Nairobi",  s:"n", age:"",    leads:0,  x:462, y:349 },
+    { id:"karen",     n:"Karen",      c:"Nairobi",  s:"n", age:"",    leads:0,  x:236, y:388 },
+    { id:"embakasi",  n:"Embakasi",   c:"Nairobi",  s:"n", age:"",    leads:0,  x:598, y:356 },
+    { id:"runda",     n:"Runda",      c:"Kiambu",   s:"s", age:"26d", leads:42, x:412, y:140 },
+    { id:"kiambu",    n:"Kiambu",     c:"Kiambu",   s:"f", age:"3d",  leads:55, x:318, y:92  },
+    { id:"ruiru",     n:"Ruiru",      c:"Kiambu",   s:"f", age:"5d",  leads:65, x:548, y:136 },
+    { id:"thika",     n:"Thika",      c:"Kiambu",   s:"s", age:"21d", leads:38, x:648, y:70  },
+    { id:"athi",      n:"Athi River", c:"Machakos", s:"n", age:"",    leads:0,  x:640, y:432 }
+  ];
+  var CAP = 2, PER = 253, LIMIT = 720; // verified: ~253s/location, 720s subprocess ceiling
+  var sel = [];
+
+  function fmt(s) { var m = Math.floor(s/60), r = s%60; return m + "m " + String(r).padStart(2,"0") + "s"; }
+  function byId(id) { for (var i=0;i<AREAS.length;i++) if (AREAS[i].id===id) return AREAS[i]; return null; }
+  function label(a) { return a.s==="f" ? "Fresh · "+a.age : a.s==="s" ? "Stale · "+a.age : "No recent runs"; }
+
+  function toggle(id) {
+    var i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i,1);
+    else { if (sel.length >= CAP) return; sel.push(id); }
+    renderAll();
+  }
+
+  /* ---------- slot meters ---------- */
+  function slots(el, capEl) {
+    var h = "";
+    for (var i=0;i<CAP;i++) h += '<i class="'+(i<sel.length ? (sel.length===CAP?"full":"on") : "")+'"></i>';
+    el.innerHTML = h;
+    capEl.textContent = sel.length + " / " + CAP + " areas";
+  }
+
+  /* ---------- D1 board ---------- */
+  function renderBoard() {
+    var host = document.getElementById("d1board");
+    var counties = ["Nairobi","Kiambu","Machakos"];
+    host.innerHTML = counties.map(function (c) {
+      var list = AREAS.filter(function (a) { return a.c === c; });
+      var fresh = list.filter(function (a) { return a.s === "f"; }).length;
+      return '<div class="countyband"><div class="cbtitle"><b>'+c+'</b><span>'+fresh+' of '+list.length+' fresh</span>'
+        + '<span class="rule"></span></div><div class="areagrid">'
+        + list.map(function (a) {
+            var on = sel.indexOf(a.id) >= 0;
+            var locked = !on && sel.length >= CAP;
+            return '<button class="area a-'+a.s+(on?" on":"")+(locked?" locked":"")+'" data-id="'+a.id+'"'
+              + (locked?' aria-disabled="true"':'') + ' aria-pressed="'+on+'">'
+              + (on ? '<span class="seq">'+(sel.indexOf(a.id)+1)+'</span>' : '')
+              + '<span class="an">'+a.n+'</span><span class="am">'+label(a)+'</span></button>';
+          }).join("")
+        + '</div></div>';
+    }).join("");
+    host.querySelectorAll(".area").forEach(function (b) {
+      b.addEventListener("click", function () { toggle(b.dataset.id); });
+    });
+  }
+
+  /* ---------- D1 plan + budget ---------- */
+  function renderPlan() {
+    var stops = document.getElementById("d1stops");
+    var bud = document.getElementById("d1budget");
+    var runLbl = document.getElementById("d1runlabel");
+    var runBtn = document.getElementById("d1run");
+
+    if (!sel.length) {
+      stops.innerHTML = '<div class="planempty">No areas selected yet.<br>Pick up to '+CAP+' from the board.</div>';
+      bud.innerHTML = "";
+      runLbl.textContent = "Select an area to run";
+      runBtn.disabled = true;
+      return;
+    }
+    runBtn.disabled = false;
+    runLbl.textContent = "Run Scraper · " + sel.length + " area" + (sel.length>1?"s":"");
+
+    stops.innerHTML = sel.map(function (id, i) {
+      var a = byId(id);
+      return '<div class="stop"><div class="rail"><span class="num">'+(i+1)+'</span></div>'
+        + '<div><div class="nm">'+a.n+'</div><div class="mt">'+a.c+' County · '+label(a)+'</div></div>'
+        + '<div style="display:flex;align-items:center;gap:8px;"><span class="est tnum">~'+fmt(PER)+'</span>'
+        + '<button class="rm" data-id="'+a.id+'" aria-label="Remove '+a.n+'"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div></div>';
+    }).join("");
+    stops.querySelectorAll(".rm").forEach(function (b) {
+      b.addEventListener("click", function () { toggle(b.dataset.id); });
+    });
+
+    var total = sel.length * PER;
+    var pct = Math.min(100, total / LIMIT * 100);
+    var ratio = total / LIMIT;
+    var tone = ratio > 0.92 ? "bad" : ratio > 0.7 ? "warn" : "ok";
+    var fillColor = tone === "bad" ? "var(--destructive)" : tone === "warn" ? "var(--warning)" : "var(--primary)";
+    var msg = tone === "bad"
+      ? "Over the safe ceiling — the worker may be killed mid-run. Remove an area."
+      : tone === "warn"
+        ? "Close to the ceiling. A slow area could push this run over."
+        : "Comfortably inside the worker limit.";
+    var icon = tone === "ok" ? "i-check" : "i-alert";
+
+    bud.innerHTML =
+      '<div class="budrow"><span class="k">Estimated total</span><span class="v tnum">'+fmt(total)+'</span></div>'
+      + '<div class="track"><span class="fill" style="width:'+pct+'%;background:'+fillColor+'"></span>'
+      + '<span class="limit" style="left:100%"></span></div>'
+      + '<div class="budmeta"><span>'+sel.length+' × ~'+fmt(PER)+' sequential</span><span>ceiling '+fmt(LIMIT)+'</span></div>'
+      + '<div class="verdict v-'+tone+'"><svg class="ic sm" viewBox="0 0 24 24" style="margin-top:1px"><use href="#'+icon+'"/></svg><span>'+msg+'</span></div>';
+  }
+
+  /* ---------- D2 map ---------- */
+  function renderMap() {
+    var svg = document.getElementById("d2map");
+    var NS = "http://www.w3.org/2000/svg";
+    svg.innerHTML = "";
+
+    var defs = document.createElementNS(NS, "defs");
+    defs.innerHTML = '<pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">'
+      + '<circle cx="1.5" cy="1.5" r="1.1" fill="oklch(0.92 0.01 250)"/></pattern>';
+    svg.appendChild(defs);
+
+    var bg = document.createElementNS(NS, "rect");
+    bg.setAttribute("width","760"); bg.setAttribute("height","470"); bg.setAttribute("fill","url(#dots)");
+    svg.appendChild(bg);
+
+    // county grouping labels
+    [["KIAMBU",470,44],["NAIROBI",300,430],["MACHAKOS",660,470]].forEach(function (g) {
+      var t = document.createElementNS(NS,"text");
+      t.setAttribute("x",g[1]); t.setAttribute("y",g[2]); t.setAttribute("font-size","11");
+      t.setAttribute("font-weight","700"); t.setAttribute("letter-spacing","2.5");
+      t.setAttribute("fill","oklch(0.5 0.02 250)"); t.setAttribute("text-anchor","middle");
+      t.setAttribute("font-family","Inter, sans-serif"); t.textContent = g[0];
+      svg.appendChild(t);
+    });
+
+    // run path between selected
+    if (sel.length > 1) {
+      var pts = sel.map(function (id) { var a = byId(id); return a.x + "," + a.y; }).join(" L ");
+      var path = document.createElementNS(NS,"path");
+      path.setAttribute("d","M " + pts);
+      path.setAttribute("stroke","var(--primary)"); path.setAttribute("stroke-width","2");
+      path.setAttribute("fill","none"); path.setAttribute("stroke-dasharray","5 5");
+      path.setAttribute("opacity",".55");
+      svg.appendChild(path);
+    }
+
+    AREAS.forEach(function (a) {
+      var on = sel.indexOf(a.id) >= 0;
+      var r = a.leads ? 15 + a.leads * 0.13 : 13;
+      var fill = a.s === "f" ? "var(--fresh-bg)" : a.s === "s" ? "var(--stale-bg)" : "var(--muted)";
+      var stroke = a.s === "f" ? "var(--fresh-bd)" : a.s === "s" ? "var(--stale-bd)"
+                 : "color-mix(in oklab, var(--muted-foreground) 34%, white)";
+      var ink = a.s === "f" ? "var(--fresh-ink)" : a.s === "s" ? "var(--stale-ink)" : "var(--muted-foreground)";
+
+      var g = document.createElementNS(NS,"g");
+      g.setAttribute("class","node" + (on ? " on" : ""));
+      g.setAttribute("tabindex","0");
+      g.setAttribute("role","button");
+      g.setAttribute("aria-pressed", String(on));
+      g.setAttribute("aria-label", a.n + ", " + a.c + " county, " + label(a) + (a.leads ? ", " + a.leads + " leads" : ""));
+
+      var halo = document.createElementNS(NS,"circle");
+      halo.setAttribute("class","halo");
+      halo.setAttribute("cx",a.x); halo.setAttribute("cy",a.y); halo.setAttribute("r", r + 8);
+      halo.setAttribute("fill","none"); halo.setAttribute("stroke","var(--primary)"); halo.setAttribute("stroke-width","2");
+      g.appendChild(halo);
+
+      var c = document.createElementNS(NS,"circle");
+      c.setAttribute("class","core");
+      c.setAttribute("cx",a.x); c.setAttribute("cy",a.y); c.setAttribute("r", on ? r + 2 : r);
+      c.setAttribute("fill", on ? "var(--accent)" : fill);
+      c.setAttribute("stroke", on ? "var(--primary)" : stroke);
+      c.setAttribute("stroke-width", on ? "2.5" : "1.5");
+      g.appendChild(c);
+
+      if (on) {
+        var badge = document.createElementNS(NS,"circle");
+        badge.setAttribute("cx", a.x + r - 1); badge.setAttribute("cy", a.y - r + 1);
+        badge.setAttribute("r","9"); badge.setAttribute("fill","var(--primary)");
+        g.appendChild(badge);
+        var bt = document.createElementNS(NS,"text");
+        bt.setAttribute("x", a.x + r - 1); bt.setAttribute("y", a.y - r + 4.5);
+        bt.setAttribute("text-anchor","middle"); bt.setAttribute("font-size","10");
+        bt.setAttribute("font-weight","700"); bt.setAttribute("fill","white");
+        bt.textContent = sel.indexOf(a.id) + 1;
+        g.appendChild(bt);
+      }
+
+      var nm = document.createElementNS(NS,"text");
+      nm.setAttribute("x",a.x); nm.setAttribute("y", a.y + 3);
+      nm.setAttribute("text-anchor","middle"); nm.setAttribute("font-size","10.5");
+      nm.setAttribute("font-weight","650"); nm.setAttribute("fill", on ? "var(--accent-foreground)" : ink);
+      nm.textContent = a.n;
+      g.appendChild(nm);
+
+      if (a.leads) {
+        var ld = document.createElementNS(NS,"text");
+        ld.setAttribute("x",a.x); ld.setAttribute("y", a.y + 14);
+        ld.setAttribute("text-anchor","middle"); ld.setAttribute("font-size","8.5");
+        ld.setAttribute("fill", on ? "var(--accent-foreground)" : ink); ld.setAttribute("opacity",".75");
+        ld.textContent = a.leads;
+        g.appendChild(ld);
+      }
+
+      g.addEventListener("click", function () { toggle(a.id); });
+      g.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(a.id); }
+      });
+      svg.appendChild(g);
+    });
+  }
+
+  function renderTray(hostId, empty) {
+    var host = document.getElementById(hostId);
+    if (!host) return;
+    if (!sel.length) { host.innerHTML = '<span style="font-size:12px;color:var(--muted-foreground)">'+empty+'</span>'; return; }
+    host.innerHTML = sel.map(function (id) {
+      var a = byId(id);
+      return '<span class="tchip">'+a.n+'<button data-id="'+id+'" aria-label="Remove '+a.n+'">'
+        + '<svg class="ic sm" viewBox="0 0 24 24" style="width:10px;height:10px"><use href="#i-x"/></svg></button></span>';
+    }).join("");
+    host.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function () { toggle(b.dataset.id); });
+    });
+  }
+
+  function renderHexStrip() {
+    var host = document.getElementById("d2hex");
+    if (!host) return;
+    var h = "";
+    for (var i = 0; i < 47; i++) {
+      var cls = i === 12 ? "var(--fresh-bg)" : i === 19 ? "var(--fresh-bg)" : i === 27 ? "var(--stale-bg)" : "var(--muted)";
+      var bd  = i === 12 || i === 19 ? "var(--fresh-bd)" : i === 27 ? "var(--stale-bd)" : "var(--border)";
+      h += '<span class="hexcell" style="background:'+cls+';box-shadow:inset 0 0 0 1px '+bd+'"></span>';
+    }
+    host.innerHTML = h;
+  }
+
+  /* ---------- D3 ---------- */
+  function renderRail() {
+    var host = document.getElementById("d3rail");
+    if (!host) return;
+    var rows = [["Nairobi",7,3,0],["Kiambu",4,2,2],["Machakos",1,0,0],["Mombasa",3,0,0],["Kisumu",2,0,0],["Nakuru",2,0,0]];
+    host.innerHTML = rows.map(function (r, i) {
+      var bars = "";
+      for (var k=0;k<r[1] && k<5;k++) bars += '<i class="'+(k<r[2]?"f":k<r[2]+r[3]?"s":"")+'"></i>';
+      return '<button class="railitem"'+(i===0?' aria-current="true"':'')+'>'+r[0]
+        + '<span class="ct">'+r[1]+'</span><span class="bar">'+bars+'</span></button>';
+    }).join("") + '<div style="font-size:11px;color:var(--muted-foreground);padding:9px;">+ 41 more counties</div>';
+  }
+
+  function renderHeat() {
+    var host = document.getElementById("d3heat");
+    if (!host) return;
+    var rows = [["Nairobi","7 areas","f",5,"s",2],["Kiambu","4 areas","f",3,"n",0],
+                ["Machakos","1 area","n",0,"n",0],["Mombasa","3 areas","n",0,"n",0],["Kisumu","2 areas","n",0,"n",0]];
+    var h = '<div class="hh">County</div><div class="hh">Apartments</div><div class="hh">Agencies</div><div class="hh">Developers</div>';
+    rows.forEach(function (r) {
+      h += '<div class="hlabel">'+r[0]+'<small>'+r[1]+'</small></div>';
+      h += cell(r[2], r[3]) + cell(r[4], r[5]);
+      h += '<div class="hcell h-na">nationwide</div>';
+    });
+    host.innerHTML = h;
+    function cell(s, n) {
+      if (s === "f") return '<div class="hcell h-f">'+n+'<small>fresh</small></div>';
+      if (s === "s") return '<div class="hcell h-s">'+n+'<small>stale</small></div>';
+      return '<div class="hcell h-n">—<small>none</small></div>';
+    }
+  }
+
+  function renderD3Budget() {
+    var host = document.getElementById("d3budget");
+    var lbl = document.getElementById("d3runlabel");
+    var btn = document.getElementById("d3run");
+    if (!host) return;
+    if (!sel.length) {
+      host.innerHTML = '<div style="font-size:11.5px;color:var(--muted-foreground)">Queue is empty.</div>';
+      lbl.textContent = "Run Scraper"; btn.disabled = true; return;
+    }
+    btn.disabled = false;
+    lbl.textContent = "Run · " + sel.length + " area" + (sel.length>1?"s":"");
+    var total = sel.length * PER, pct = Math.min(100, total/LIMIT*100), ratio = total/LIMIT;
+    var col = ratio > .92 ? "var(--destructive)" : ratio > .7 ? "var(--warning)" : "var(--primary)";
+    host.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted-foreground)">'
+      + '<span>Est. runtime</span><span class="tnum" style="font-weight:650;color:var(--foreground)">'+fmt(total)+'</span></div>'
+      + '<div class="track" style="margin-top:6px;height:7px;"><span class="fill" style="width:'+pct+'%;background:'+col+'"></span></div>';
+  }
+
+  /* ---------- orchestration ---------- */
+  function renderAll() {
+    renderBoard(); renderPlan(); renderMap();
+    renderTray("d2tray","Tap a node on the map");
+    renderTray("d3tray","Nothing queued");
+    renderD3Budget();
+    slots(document.getElementById("d1slots"), document.getElementById("d1cap"));
+    slots(document.getElementById("d2slots"), document.getElementById("d2cap"));
+    slots(document.getElementById("d3slots"), document.getElementById("d3cap"));
+    var d2l = document.getElementById("d2runlabel");
+    d2l.textContent = sel.length ? "Run · " + sel.length + " area" + (sel.length>1?"s":"") : "Run Scraper";
+    document.getElementById("d2run").disabled = !sel.length;
+  }
+
+  /* tabs */
+  var tabs = [].slice.call(document.querySelectorAll(".tab"));
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () {
+      tabs.forEach(function (o) {
+        var on = o === t;
+        o.setAttribute("aria-selected", String(on));
+        document.getElementById(o.getAttribute("aria-controls")).hidden = !on;
+      });
+    });
+  });
+
+  /* source segs (visual only in this study) */
+  document.querySelectorAll(".seg").forEach(function (seg) {
+    seg.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        seg.querySelectorAll("button").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      });
+    });
+  });
+
+  renderHexStrip(); renderRail(); renderHeat();
+  sel = ["kilimani"];
+  renderAll();
+})();
+</script>

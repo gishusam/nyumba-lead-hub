@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nyumba Zetu — Compact Scraper Workspace</title>
+  <style>
+    :root {
+      --primary: oklch(0.45 0.13 165);
+      --primary-strong: oklch(0.38 0.12 165);
+      --primary-soft: oklch(0.95 0.04 170);
+      --background: oklch(0.988 0.003 240);
+      --card: #fff;
+      --foreground: oklch(0.18 0.03 250);
+      --muted: oklch(0.965 0.008 250);
+      --muted-foreground: oklch(0.5 0.02 250);
+      --border: oklch(0.91 0.01 250);
+      --success: oklch(0.58 0.15 155);
+      --warning: oklch(0.68 0.15 70);
+      --destructive: oklch(0.57 0.2 25);
+      --info: oklch(0.58 0.15 245);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--foreground);
+      background: var(--background);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--background); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid oklch(0.45 0.13 165 / .22); outline-offset: 2px; }
+    .shell { max-width: 1500px; margin: 0 auto; padding: 28px 32px 64px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 18px; }
+    .title-wrap { display: flex; align-items: center; gap: 15px; }
+    .mark { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: white; background: var(--primary); font-family: Georgia, serif; font-size: 19px; font-weight: 800; box-shadow: 0 7px 18px oklch(0.45 0.13 165 / .2); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 2px; font-family: "Plus Jakarta Sans", Inter, sans-serif; font-size: 25px; letter-spacing: -.025em; line-height: 1.2; }
+    h2 { margin-bottom: 3px; font-family: "Plus Jakarta Sans", Inter, sans-serif; font-size: 15px; letter-spacing: -.01em; }
+    h3 { margin-bottom: 3px; font-size: 13px; }
+    .sub { margin-bottom: 0; color: var(--muted-foreground); font-size: 12px; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 999px; color: var(--muted-foreground); background: white; border: 1px solid var(--border); font-size: 11px; font-weight: 750; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+    .btn { height: 36px; border: 1px solid var(--border); border-radius: 9px; padding: 0 13px; background: white; color: var(--foreground); font-size: 12px; font-weight: 750; transition: .16s ease; }
+    .btn:hover { border-color: oklch(0.45 0.13 165 / .4); background: var(--muted); }
+    .btn-primary { height: 42px; border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 8px 18px oklch(0.45 0.13 165 / .18); }
+    .btn-primary:hover { background: var(--primary-strong); }
+    .card { border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: 0 8px 26px rgb(15 23 42 / .045); overflow: hidden; }
+    .command { padding: 18px; }
+    .command-labels, .command-grid { display: grid; grid-template-columns: 2.25fr 2.6fr 2.2fr 1.5fr; gap: 10px; align-items: end; }
+    .command-labels { margin-bottom: 6px; }
+    .label { color: var(--muted-foreground); font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .source-tabs { display: flex; height: 42px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--muted); }
+    .source-tab { flex: 1; border: 0; border-radius: 7px; color: var(--muted-foreground); background: transparent; font-size: 11px; font-weight: 800; }
+    .source-tab.active { color: var(--foreground); background: white; box-shadow: 0 1px 4px rgb(15 23 42 / .12); }
+    .select-wrap { position: relative; }
+    select { width: 100%; height: 42px; appearance: none; border: 1px solid var(--border); border-radius: 10px; padding: 0 34px 0 12px; background: white; color: var(--foreground); font-size: 12px; font-weight: 750; }
+    .select-wrap::after { content: "⌄"; position: absolute; right: 12px; top: 50%; translate: 0 -55%; color: var(--muted-foreground); pointer-events: none; }
+    .scope-box { display: flex; align-items: center; min-height: 42px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted-foreground); background: oklch(0.985 0.008 165); font-size: 11px; line-height: 1.25; }
+    .scope-box strong { color: var(--foreground); }
+    .command-grid .btn-primary { width: 100%; }
+    .query-drawer { display: grid; grid-template-columns: 2.25fr minmax(0, 6.3fr); gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .query-copy { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 11px; }
+    .query-copy strong { color: var(--foreground); }
+    .query-code { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 9px 11px; border-radius: 9px; background: var(--muted); }
+    code { overflow: hidden; color: oklch(0.3 0.06 245); font-family: "SFMono-Regular", Consolas, monospace; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .query-code span { flex: 0 0 auto; color: var(--primary); font-size: 10px; font-weight: 800; }
+    .scope-strip { display: grid; grid-template-columns: 1.3fr repeat(5, 1fr); margin: 14px 0; border: 1px solid var(--border); border-radius: 12px; background: white; overflow: hidden; }
+    .scope-intro, .metric { padding: 13px 15px; border-right: 1px solid var(--border); }
+    .metric:last-child { border-right: 0; }
+    .scope-intro { background: oklch(0.985 0.008 165); }
+    .scope-intro h2 { margin-bottom: 2px; font-size: 13px; }
+    .scope-intro p, .metric p { margin-bottom: 0; color: var(--muted-foreground); font-size: 9px; line-height: 1.4; }
+    .metric strong { display: block; margin-bottom: 2px; font-family: "Plus Jakarta Sans", Inter, sans-serif; font-size: 18px; font-variant-numeric: tabular-nums; }
+    .metric.success strong { color: var(--success); }
+    .metric.warning strong { color: var(--warning); }
+    .metric.danger strong { color: var(--destructive); }
+    .workspace { display: grid; grid-template-columns: minmax(0, 7.6fr) minmax(320px, 4.4fr); }
+    .main-panel { border-right: 1px solid var(--border); }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 15px 17px; border-bottom: 1px solid var(--border); }
+    .panel-head h2, .panel-head p { margin-bottom: 0; }
+    .panel-head p { margin-top: 3px; color: var(--muted-foreground); font-size: 10px; }
+    .filters { display: flex; gap: 6px; }
+    .filter { height: 29px; border: 1px solid var(--border); border-radius: 8px; padding: 0 9px; background: white; color: var(--muted-foreground); font-size: 10px; font-weight: 750; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { padding: 9px 12px; color: var(--muted-foreground); background: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .05em; text-align: left; text-transform: uppercase; }
+    td { padding: 11px 12px; border-top: 1px solid var(--border); vertical-align: middle; }
+    tr.selected-row td { background: var(--primary-soft); }
+    tr:not(.selected-row):hover td { background: oklch(0.985 0.008 165); }
+    .run { font-weight: 800; }
+    .run small { display: block; margin-top: 2px; color: var(--muted-foreground); font-size: 9px; font-weight: 500; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 7px; font-size: 9px; font-weight: 850; white-space: nowrap; }
+    .badge.success { color: var(--success); background: oklch(0.95 0.04 155); }
+    .badge.failed { color: var(--destructive); background: oklch(0.95 0.035 25); }
+    .page { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--border); color: var(--muted-foreground); font-size: 10px; }
+    .pager { display: flex; gap: 5px; }
+    .pager button { width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 7px; background: white; color: var(--muted-foreground); }
+    .detail { padding: 17px; }
+    .detail-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .detail-title p { margin-bottom: 0; color: var(--muted-foreground); font-size: 10px; }
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 13px 0; }
+    .fact { padding: 9px; border: 1px solid var(--border); border-radius: 9px; }
+    .fact strong { display: block; margin-bottom: 1px; font-size: 16px; font-variant-numeric: tabular-nums; }
+    .fact span { color: var(--muted-foreground); font-size: 8px; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 15px; }
+    .pipe { height: 5px; border-radius: 999px; background: var(--muted); }
+    .pipe.found { background: var(--foreground); }
+    .pipe.info { background: var(--info); }
+    .pipe.warning { background: var(--warning); }
+    .pipe.danger { background: var(--destructive); }
+    .tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+    .tab { height: 28px; border: 1px solid transparent; border-radius: 7px; padding: 0 8px; background: transparent; color: var(--muted-foreground); font-size: 9px; font-weight: 850; }
+    .tab.active { border-color: var(--border); background: var(--muted); color: var(--foreground); }
+    .record { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 10px; }
+    .record strong { display: block; margin-bottom: 2px; }
+    .record span { color: var(--muted-foreground); }
+    .health { margin-top: 14px; }
+    .health-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 14px 17px; }
+    .health-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; color: var(--warning); background: oklch(0.95 0.04 70); font-weight: 850; }
+    .health-row p { margin-bottom: 0; color: var(--muted-foreground); font-size: 10px; }
+    .note { margin: 14px 2px 0; color: var(--muted-foreground); font-size: 9px; line-height: 1.5; }
+    #developerScope { display: none; }
+    @media (max-width: 980px) {
+      .command-labels { display: none; }
+      .command-grid { grid-template-columns: 1fr 1fr; }
+      .query-drawer { grid-template-columns: 1fr; }
+      .scope-strip { grid-template-columns: repeat(3, 1fr); }
+      .scope-intro { grid-column: span 3; }
+      .workspace { grid-template-columns: 1fr; }
+      .main-panel { border-right: 0; border-bottom: 1px solid var(--border); }
+    }
+    @media (max-width: 620px) {
+      .shell { padding: 20px 12px 46px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .top-actions { width: 100%; }
+      .command-grid { grid-template-columns: 1fr; }
+      .scope-strip { grid-template-columns: repeat(2, 1fr); }
+      .scope-intro { grid-column: span 2; }
+      .facts { grid-template-columns: repeat(2, 1fr); }
+      .history-scroll { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="title-wrap">
+        <div class="mark">N</div>
+        <div><h1>Lead acquisition pipeline</h1><p class="sub">Run a bounded scrape and inspect its evidence in one workspace.</p></div>
+      </div>
+      <div class="top-actions"><span class="status"><span class="dot"></span>Worker idle</span><button class="btn" type="button">Refresh</button></div>
+    </header>
+
+    <section class="card command">
+      <div class="command-labels" aria-hidden="true"><div class="label">Source</div><div class="label">Verified area</div><div class="label">Run scope</div><div></div></div>
+      <div class="command-grid">
+        <div class="source-tabs">
+          <button class="source-tab active" type="button" data-source="apartments">Apartments</button>
+          <button class="source-tab" type="button" data-source="agencies">Agencies</button>
+          <button class="source-tab" type="button" data-source="developers">Developers</button>
+        </div>
+        <div class="select-wrap" id="areaControl">
+          <select id="areaSelect" aria-label="Verified area">
+            <option data-county="Nairobi">Kilimani</option>
+            <option data-county="Nairobi">Kileleshwa</option>
+            <option data-county="Nairobi">Westlands</option>
+            <option data-county="Nairobi">Lavington</option>
+            <option data-county="Nairobi">Runda</option>
+            <option data-county="Kiambu">Ruaka</option>
+            <option data-county="Machakos">Syokimau</option>
+          </select>
+        </div>
+        <div class="scope-box" id="runScope"><span><strong>7 searches</strong><br>1 area · sequential worker</span></div>
+        <button class="btn btn-primary" id="runButton" type="button">Run Apartments</button>
+      </div>
+      <div class="query-drawer" id="queryDrawer">
+        <div class="query-copy"><strong>Query preview</strong><span>First of 7 variants</span></div>
+        <div class="query-code"><code id="queryText">apartments Kilimani, Nairobi County, Kenya</code><span id="queryMore">+6 variants</span></div>
+      </div>
+      <div class="scope-box" id="developerScope"><span><strong>Nationwide directory enrichment</strong><br>No area input · up to 20 pending KPDA companies</span></div>
+    </section>
+
+    <section class="scope-strip">
+      <div class="scope-intro"><h2>Recent 50 runs</h2><p>The API window, clearly labelled. These are not lifetime totals.</p></div>
+      <div class="metric"><strong>1,482</strong><p>Records found</p></div>
+      <div class="metric"><strong>418</strong><p>With contacts</p></div>
+      <div class="metric success"><strong>286</strong><p>Imported</p></div>
+      <div class="metric warning"><strong>523</strong><p>Duplicates</p></div>
+      <div class="metric danger"><strong>673</strong><p>Rejected</p></div>
+    </section>
+
+    <section class="card workspace">
+      <div class="main-panel">
+        <div class="panel-head">
+          <div><h2>Run history</h2><p>Rows and record audits share the same reading context.</p></div>
+          <div class="filters"><button class="filter" type="button">All sources</button><button class="filter" type="button">All areas</button></div>
+        </div>
+        <div class="history-scroll">
+          <table>
+            <thead><tr><th>Run</th><th>Area</th><th>Found</th><th>Contacts</th><th>Imported</th><th>Rejected</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr class="selected-row">
+                <td class="run">#45 Apartments<small>29 Jul · 4m 13s</small></td><td>Ruiru</td><td>65</td><td>9</td><td>0</td><td>45</td><td><span class="badge success">Success</span></td>
+              </tr>
+              <tr>
+                <td class="run">#44 Agencies<small>28 Jul · 2m 08s</small></td><td>Kilimani</td><td>12</td><td>8</td><td>1</td><td>0</td><td><span class="badge success">Success</span></td>
+              </tr>
+              <tr>
+                <td class="run">#43 Apartments<small>28 Jul · 12m 00s</small></td><td>Thika</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="badge failed">Failed</span></td>
+              </tr>
+              <tr>
+                <td class="run">#42 Developers<small>27 Jul · 1m 41s</small></td><td>Nationwide</td><td>20</td><td>8</td><td>8</td><td>5</td><td><span class="badge success">Success</span></td>
+              </tr>
+              <tr>
+                <td class="run">#41 Apartments<small>27 Jul · 3m 36s</small></td><td>Westlands</td><td>48</td><td>17</td><td>4</td><td>20</td><td><span class="badge success">Success</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="page"><span>Showing 1–5 of 50 runs</span><div class="pager"><button type="button">‹</button><button type="button">›</button></div></div>
+      </div>
+
+      <aside class="detail">
+        <div class="detail-title"><div><h3>Run #45 evidence</h3><p>Apartments · Ruiru · completed 29 Jul</p></div><span class="badge success">Success</span></div>
+        <div class="facts">
+          <div class="fact"><strong>65</strong><span>Found</span></div>
+          <div class="fact"><strong style="color:var(--info)">9</strong><span>Contacts</span></div>
+          <div class="fact"><strong style="color:var(--success)">0</strong><span>Imported</span></div>
+          <div class="fact"><strong style="color:var(--info)">0</strong><span>Updated</span></div>
+          <div class="fact"><strong style="color:var(--warning)">20</strong><span>Duplicate</span></div>
+          <div class="fact"><strong style="color:var(--destructive)">45</strong><span>Rejected</span></div>
+        </div>
+        <div class="pipeline"><div class="pipe found"></div><div class="pipe info"></div><div class="pipe warning"></div><div class="pipe danger"></div></div>
+        <div class="tabs"><button class="tab" type="button">Imported 0</button><button class="tab active" type="button">Rejected 45</button><button class="tab" type="button">Duplicates 20</button></div>
+        <div class="record"><div><strong>Oakwood Residency</strong><span>No phone or website</span></div><span>Ruiru</span></div>
+        <div class="record"><div><strong>Greenview Apartments</strong><span>No contact route</span></div><span>Ruiru</span></div>
+        <div class="record"><div><strong>Juja Road Homes</strong><span>Outside selected qualifier</span></div><span>Ruiru</span></div>
+        <button class="btn" type="button" style="width:100%;margin-top:11px">Open complete audit</button>
+      </aside>
+    </section>
+
+    <section class="card health">
+      <div class="health-row">
+        <div class="health-icon">!</div>
+        <div><h2>Run health</h2><p>3 failed runs across 2 known patterns in the recent history window.</p></div>
+        <button class="btn" type="button">Review issues</button>
+      </div>
+    </section>
+    <p class="note">Design note: representative values are used to test hierarchy. The production view must use live API data and keep technical failure strings behind progressive disclosure.</p>
+  </main>
+  <script>
+    const tabs = [...document.querySelectorAll(".source-tab")];
+    const areaSelect = document.getElementById("areaSelect");
+    const areaControl = document.getElementById("areaControl");
+    const runScope = document.getElementById("runScope");
+    const runButton = document.getElementById("runButton");
+    const queryDrawer = document.getElementById("queryDrawer");
+    const queryText = document.getElementById("queryText");
+    const queryMore = document.getElementById("queryMore");
+    const developerScope = document.getElementById("developerScope");
+    let source = "apartments";
+
+    function renderCommand() {
+      const option = areaSelect.options[areaSelect.selectedIndex];
+      const place = option.text;
+      const county = option.dataset.county;
+      const developers = source === "developers";
+      areaControl.style.display = developers ? "none" : "block";
+      runScope.style.display = developers ? "none" : "flex";
+      queryDrawer.style.display = developers ? "none" : "grid";
+      developerScope.style.display = developers ? "flex" : "none";
+      if (developers) {
+        runButton.textContent = "Run Developers";
+        runButton.parentElement.style.gridTemplateColumns = "2.25fr 4.8fr 1.5fr";
+        return;
+      }
+      runButton.parentElement.style.gridTemplateColumns = "";
+      const agencies = source === "agencies";
+      runScope.innerHTML = `<span><strong>${agencies ? 2 : 7} searches</strong><br>1 area · sequential worker</span>`;
+      queryText.textContent = `${agencies ? "property management companies" : "apartments"} ${place}, ${county} County, Kenya`;
+      queryMore.textContent = agencies ? "+1 variant" : "+6 variants";
+      runButton.textContent = `Run ${agencies ? "Agencies" : "Apartments"}`;
+    }
+
+    tabs.forEach((tab) => tab.addEventListener("click", () => {
+      tabs.forEach((item) => item.classList.remove("active"));
+      tab.classList.add("active");
+      source = tab.dataset.source;
+      renderCommand();
+    }));
+    areaSelect.addEventListener("change", renderCommand);
+    renderCommand();
+  </script>
+</body>
+</html>

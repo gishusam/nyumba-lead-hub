@@ -61,14 +61,20 @@ test("scraper API preserves the existing run, history, and audit contracts", asy
   }) as typeof fetch;
 
   try {
+    await scraperApi.options();
     await scraperApi.runs();
     await scraperApi.records(45);
-    await scraperApi.run("apartments", ["ruiru", "thika"]);
+    await scraperApi.run("apartments", ["ruiru"]);
   } finally {
     globalThis.fetch = originalFetch;
   }
 
   assert.deepEqual(requests, [
+    {
+      url: `${API_BASE_URL}/api/scraper/options`,
+      method: "GET",
+      body: undefined,
+    },
     {
       url: `${API_BASE_URL}/api/scraper/runs`,
       method: "GET",
@@ -84,7 +90,7 @@ test("scraper API preserves the existing run, history, and audit contracts", asy
       method: "POST",
       body: {
         scraper_type: "apartments",
-        areas: ["ruiru", "thika"],
+        areas: ["ruiru"],
       },
     },
   ]);

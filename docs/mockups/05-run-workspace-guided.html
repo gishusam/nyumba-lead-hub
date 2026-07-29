@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nyumba Zetu — Guided Scraper Workspace</title>
+  <style>
+    :root {
+      --primary: oklch(0.45 0.13 165);
+      --primary-strong: oklch(0.38 0.12 165);
+      --primary-soft: oklch(0.95 0.04 170);
+      --background: oklch(0.985 0.004 240);
+      --card: #fff;
+      --foreground: oklch(0.18 0.03 250);
+      --muted: oklch(0.97 0.008 250);
+      --muted-foreground: oklch(0.5 0.02 250);
+      --border: oklch(0.91 0.01 250);
+      --success: oklch(0.58 0.15 155);
+      --warning: oklch(0.68 0.15 70);
+      --destructive: oklch(0.57 0.2 25);
+      --info: oklch(0.58 0.15 245);
+      --shadow: 0 12px 34px rgb(15 23 42 / 0.06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--foreground);
+      background: var(--background);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background:
+      radial-gradient(circle at 82% 2%, oklch(0.95 0.04 170 / .65), transparent 26rem),
+      var(--background); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid oklch(0.45 0.13 165 / .22);
+      outline-offset: 2px;
+    }
+    .shell { max-width: 1480px; margin: 0 auto; padding: 34px 34px 72px; }
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    .eyebrow { margin: 0 0 6px; color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 6px; font-family: "Plus Jakarta Sans", Inter, sans-serif; font-size: clamp(24px, 2.2vw, 31px); letter-spacing: -.025em; line-height: 1.15; }
+    h2 { font-family: "Plus Jakarta Sans", Inter, sans-serif; font-size: 16px; letter-spacing: -.01em; }
+    h3 { font-size: 13px; }
+    .lede { margin-bottom: 0; max-width: 700px; color: var(--muted-foreground); font-size: 14px; line-height: 1.55; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .status-chip, .badge {
+      display: inline-flex; align-items: center; gap: 7px; border-radius: 999px;
+      font-size: 11px; font-weight: 750; white-space: nowrap;
+    }
+    .status-chip { padding: 8px 11px; color: var(--muted-foreground); background: rgb(255 255 255 / .8); border: 1px solid var(--border); }
+    .status-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 4px oklch(0.58 0.15 155 / .12); }
+    .btn {
+      min-height: 38px; border-radius: 10px; border: 1px solid var(--border); padding: 0 14px;
+      background: var(--card); color: var(--foreground); font-size: 13px; font-weight: 750;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .btn:hover { transform: translateY(-1px); background: var(--muted); }
+    .btn-primary { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 8px 18px oklch(0.45 0.13 165 / .18); }
+    .btn-primary:hover { background: var(--primary-strong); }
+    .btn-primary:disabled { cursor: not-allowed; transform: none; opacity: .45; box-shadow: none; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 17px 20px; border-bottom: 1px solid var(--border); }
+    .card-header h2, .card-header p { margin-bottom: 0; }
+    .card-header p { margin-top: 4px; color: var(--muted-foreground); font-size: 12px; }
+    .source-tabs { display: inline-flex; padding: 4px; border: 1px solid var(--border); border-radius: 11px; background: var(--muted); }
+    .source-tab { min-width: 105px; height: 34px; border: 0; border-radius: 8px; color: var(--muted-foreground); background: transparent; font-size: 12px; font-weight: 750; }
+    .source-tab.active { background: white; color: var(--foreground); box-shadow: 0 1px 4px rgb(15 23 42 / .12); }
+    .planner-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(330px, 5fr); min-height: 474px; }
+    .picker { padding: 20px; border-right: 1px solid var(--border); }
+    .picker-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .picker-top h3 { margin-bottom: 3px; font-size: 14px; }
+    .picker-top p { margin-bottom: 0; color: var(--muted-foreground); font-size: 12px; }
+    .single-rule { color: var(--primary); font-size: 11px; font-weight: 800; }
+    .search-wrap { position: relative; margin-bottom: 18px; }
+    .search-icon { position: absolute; left: 13px; top: 50%; translate: 0 -50%; color: var(--muted-foreground); font-size: 14px; }
+    .search { width: 100%; height: 42px; border: 1px solid var(--border); border-radius: 11px; padding: 0 14px 0 38px; background: var(--card); color: var(--foreground); }
+    .search::placeholder { color: oklch(0.64 0.015 250); }
+    .group-label { display: flex; align-items: center; gap: 10px; margin: 16px 0 9px; color: var(--muted-foreground); font-size: 10px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+    .group-label::after { content: ""; height: 1px; flex: 1; background: var(--border); }
+    .area-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+    .area {
+      min-height: 73px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 11px;
+      background: white; text-align: left; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+    .area:hover { transform: translateY(-1px); border-color: oklch(0.45 0.13 165 / .42); box-shadow: 0 7px 15px rgb(15 23 42 / .06); }
+    .area.selected { border-color: var(--primary); background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+    .area-name { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; font-size: 13px; font-weight: 800; }
+    .check { display: none; width: 19px; height: 19px; place-items: center; border-radius: 999px; background: var(--primary); color: white; font-size: 11px; }
+    .selected .check { display: grid; }
+    .area-meta { color: var(--muted-foreground); font-size: 11px; line-height: 1.35; }
+    .activity-note { color: var(--info); }
+    .plan { padding: 22px; background: linear-gradient(145deg, #fff, oklch(0.98 0.01 165)); }
+    .plan-kicker { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .plan-kicker h3 { margin-bottom: 3px; font-size: 15px; }
+    .plan-kicker p { margin-bottom: 0; color: var(--muted-foreground); font-size: 12px; }
+    .badge { padding: 5px 8px; color: var(--primary); background: var(--primary-soft); }
+    .empty-plan { display: none; place-items: center; min-height: 290px; padding: 30px; border: 1px dashed var(--border); border-radius: 13px; color: var(--muted-foreground); text-align: center; }
+    .empty-plan strong { display: block; margin-bottom: 5px; color: var(--foreground); font-size: 14px; }
+    .selected-plan { display: none; }
+    .selected-plan.visible { display: block; }
+    .query-scope { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: white; }
+    .query-scope .place { margin-bottom: 3px; font-size: 15px; font-weight: 850; }
+    .query-scope .qualifier { color: var(--muted-foreground); font-size: 12px; }
+    .search-count { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 9px; }
+    .search-count strong { font-size: 12px; }
+    .search-count span { color: var(--muted-foreground); font-size: 11px; }
+    .query-list { display: grid; gap: 7px; margin-bottom: 15px; }
+    .query-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start; }
+    .query-index { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); font-size: 10px; font-weight: 800; }
+    code { overflow-wrap: anywhere; color: oklch(0.3 0.06 245); font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; line-height: 1.55; }
+    .more-queries { margin: 0 0 18px 32px; color: var(--muted-foreground); font-size: 11px; }
+    .guard { display: flex; align-items: flex-start; gap: 9px; margin: 16px 0; padding: 11px 12px; border-radius: 10px; background: oklch(0.95 0.04 170); color: oklch(0.34 0.1 165); font-size: 11px; line-height: 1.45; }
+    .run-button { width: 100%; height: 43px; }
+    .scope-copy { margin-top: 10px; color: var(--muted-foreground); font-size: 10px; text-align: center; }
+    .recent-scope { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin: 30px 0 11px; }
+    .recent-scope h2 { margin-bottom: 0; }
+    .recent-scope p { margin-bottom: 0; color: var(--muted-foreground); font-size: 11px; }
+    .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 14px; background: rgb(255 255 255 / .72); overflow: hidden; }
+    .metric { min-height: 86px; padding: 16px 18px; border-right: 1px solid var(--border); }
+    .metric:last-child { border-right: 0; }
+    .metric-value { margin-bottom: 3px; font-family: "Plus Jakarta Sans", Inter, sans-serif; font-size: 22px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .metric-label { color: var(--muted-foreground); font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .metric-sub { margin-top: 4px; color: var(--muted-foreground); font-size: 10px; }
+    .metric.success .metric-value { color: var(--success); }
+    .metric.warning .metric-value { color: var(--warning); }
+    .metric.danger .metric-value { color: var(--destructive); }
+    .evidence-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(330px, 5fr); margin-top: 18px; }
+    .history { border-right: 1px solid var(--border); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { padding: 11px 14px; color: var(--muted-foreground); background: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .05em; text-align: left; text-transform: uppercase; }
+    td { padding: 13px 14px; border-top: 1px solid var(--border); vertical-align: middle; }
+    tr.selected-row td { background: var(--primary-soft); }
+    tr:not(.selected-row):hover td { background: oklch(0.985 0.008 165); }
+    .run-name { font-weight: 800; }
+    .subline { margin-top: 2px; color: var(--muted-foreground); font-size: 10px; }
+    .run-status { padding: 4px 7px; }
+    .run-status.success { color: var(--success); background: oklch(0.95 0.04 155); }
+    .run-status.failed { color: var(--destructive); background: oklch(0.95 0.035 25); }
+    .detail { padding: 20px; }
+    .detail-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .detail-title h3 { margin-bottom: 4px; font-size: 15px; }
+    .detail-title p { color: var(--muted-foreground); font-size: 11px; }
+    .outcome { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 13px 0 18px; }
+    .outcome > div { padding: 10px; border: 1px solid var(--border); border-radius: 10px; }
+    .outcome strong { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+    .outcome span { color: var(--muted-foreground); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+    .audit-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .audit-tab { height: 30px; border: 1px solid transparent; border-radius: 8px; padding: 0 9px; background: transparent; color: var(--muted-foreground); font-size: 10px; font-weight: 800; }
+    .audit-tab.active { border-color: var(--border); background: var(--muted); color: var(--foreground); }
+    .audit-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 11px; }
+    .audit-row strong { display: block; margin-bottom: 2px; }
+    .audit-row span { color: var(--muted-foreground); }
+    .health { margin-top: 18px; }
+    .health-summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 20px; }
+    .health-copy { display: flex; align-items: flex-start; gap: 11px; }
+    .health-icon { display: grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; color: var(--warning); background: oklch(0.95 0.04 70); }
+    .health-copy h2 { margin-bottom: 3px; }
+    .health-copy p { margin-bottom: 0; color: var(--muted-foreground); font-size: 11px; }
+    .technical { color: var(--muted-foreground); font-size: 11px; font-weight: 750; }
+    .note { margin: 18px 2px 0; color: var(--muted-foreground); font-size: 10px; line-height: 1.5; }
+    @media (max-width: 1020px) {
+      .planner-grid, .evidence-grid { grid-template-columns: 1fr; }
+      .picker, .history { border-right: 0; border-bottom: 1px solid var(--border); }
+      .area-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics { grid-template-columns: repeat(3, 1fr); }
+      .metric:nth-child(3) { border-right: 0; }
+      .metric:nth-child(-n+3) { border-bottom: 1px solid var(--border); }
+    }
+    @media (max-width: 680px) {
+      .shell { padding: 24px 14px 50px; }
+      .topbar, .card-header, .picker-top { align-items: stretch; flex-direction: column; }
+      .top-actions, .source-tabs { width: 100%; }
+      .source-tab { min-width: 0; flex: 1; }
+      .area-grid { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .metric, .metric:nth-child(3) { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .metric:nth-child(even) { border-right: 0; }
+      .metric:nth-last-child(-n+2) { border-bottom: 0; }
+      .outcome { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Lead operations</p>
+        <h1>Lead acquisition pipeline</h1>
+        <p class="lede">Start a focused scrape, then inspect what the run found, imported, rejected, or could not complete.</p>
+      </div>
+      <div class="top-actions">
+        <span class="status-chip"><span class="status-dot"></span>Worker idle</span>
+        <button class="btn" type="button">Refresh activity</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Command workspace</h2>
+          <p>One verified area per run keeps the work bounded and the result attributable.</p>
+        </div>
+        <div class="source-tabs" role="tablist" aria-label="Scraper source">
+          <button class="source-tab active" type="button" data-source="apartments">Apartments</button>
+          <button class="source-tab" type="button" data-source="agencies">Agencies</button>
+          <button class="source-tab" type="button" data-source="developers">Developers</button>
+        </div>
+      </div>
+
+      <div class="planner-grid">
+        <section class="picker" id="areaPicker">
+          <div class="picker-top">
+            <div>
+              <h3>Choose an area</h3>
+              <p>Current verified Nairobi metro locations only.</p>
+            </div>
+            <span class="single-rule">1 area per run</span>
+          </div>
+          <label class="search-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input class="search" id="areaSearch" type="search" placeholder="Search area or county" autocomplete="off">
+          </label>
+          <div class="group-label">Nairobi County</div>
+          <div class="area-grid" id="nairobiAreas">
+            <button class="area selected" type="button" data-name="Kilimani" data-county="Nairobi">
+              <span class="area-name">Kilimani <span class="check">✓</span></span>
+              <span class="area-meta activity-note">Success 2d ago in recent history</span>
+            </button>
+            <button class="area" type="button" data-name="Kileleshwa" data-county="Nairobi">
+              <span class="area-name">Kileleshwa <span class="check">✓</span></span>
+              <span class="area-meta">No success in recent history</span>
+            </button>
+            <button class="area" type="button" data-name="Westlands" data-county="Nairobi">
+              <span class="area-name">Westlands <span class="check">✓</span></span>
+              <span class="area-meta activity-note">Success 6d ago in recent history</span>
+            </button>
+            <button class="area" type="button" data-name="Lavington" data-county="Nairobi">
+              <span class="area-name">Lavington <span class="check">✓</span></span>
+              <span class="area-meta">No success in recent history</span>
+            </button>
+            <button class="area" type="button" data-name="Parklands" data-county="Nairobi">
+              <span class="area-name">Parklands <span class="check">✓</span></span>
+              <span class="area-meta">No success in recent history</span>
+            </button>
+            <button class="area" type="button" data-name="Karen" data-county="Nairobi">
+              <span class="area-name">Karen <span class="check">✓</span></span>
+              <span class="area-meta">No success in recent history</span>
+            </button>
+          </div>
+          <div class="group-label">Metro neighbours</div>
+          <div class="area-grid" id="metroAreas">
+            <button class="area" type="button" data-name="Ruaka" data-county="Kiambu">
+              <span class="area-name">Ruaka <span class="check">✓</span></span>
+              <span class="area-meta">Kiambu County</span>
+            </button>
+            <button class="area" type="button" data-name="Syokimau" data-county="Machakos">
+              <span class="area-name">Syokimau <span class="check">✓</span></span>
+              <span class="area-meta">Machakos County</span>
+            </button>
+            <button class="area" type="button" data-name="Runda" data-county="Nairobi">
+              <span class="area-name">Runda <span class="check">✓</span></span>
+              <span class="area-meta">Nairobi County</span>
+            </button>
+          </div>
+        </section>
+
+        <aside class="plan">
+          <div class="plan-kicker">
+            <div>
+              <h3 id="planTitle">Run preview</h3>
+              <p id="planDescription">Review the work before starting the worker.</p>
+            </div>
+            <span class="badge" id="sourceBadge">Apartments</span>
+          </div>
+
+          <div class="selected-plan visible" id="selectedPlan">
+            <div class="query-scope">
+              <div class="place" id="selectedPlace">Kilimani</div>
+              <div class="qualifier" id="selectedQualifier">Kilimani, Nairobi County, Kenya</div>
+            </div>
+            <div class="search-count">
+              <strong id="searchCount">7 Google Maps searches</strong>
+              <span>Sequential inside one worker</span>
+            </div>
+            <div class="query-list" id="queryList"></div>
+            <div class="more-queries" id="moreQueries">+ 4 more apartment search variants</div>
+            <div class="guard">
+              <span aria-hidden="true">✓</span>
+              <span>The selected area and county qualifier will be stored with the run. No location is inferred from a shorthand ID.</span>
+            </div>
+            <button class="btn btn-primary run-button" type="button" id="runButton">Run Apartments in Kilimani</button>
+            <div class="scope-copy">The worker has a 12-minute scraper ceiling. No completion-time promise is shown.</div>
+          </div>
+          <div class="empty-plan" id="developerPlan">
+            <div>
+              <strong>Nationwide directory enrichment</strong>
+              <span>Developers does not use an area. It enriches up to 20 pending KPDA directory records.</span>
+              <button class="btn btn-primary run-button" type="button" style="margin-top:18px">Run Developer Enrichment</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="recent-scope">
+      <h2>Recent activity</h2>
+      <p>Summarised from the latest 50 runs returned by the API — not lifetime totals.</p>
+    </div>
+    <section class="metrics" aria-label="Recent activity summary">
+      <div class="metric"><div class="metric-value">50</div><div class="metric-label">Runs loaded</div><div class="metric-sub">Current API window</div></div>
+      <div class="metric"><div class="metric-value">1,482</div><div class="metric-label">Records found</div><div class="metric-sub">Across loaded runs</div></div>
+      <div class="metric"><div class="metric-value">418</div><div class="metric-label">With contacts</div><div class="metric-sub">Phone or website</div></div>
+      <div class="metric success"><div class="metric-value">286</div><div class="metric-label">Imported</div><div class="metric-sub">New leads</div></div>
+      <div class="metric warning"><div class="metric-value">523</div><div class="metric-label">Duplicates</div><div class="metric-sub">Already known</div></div>
+      <div class="metric danger"><div class="metric-value">673</div><div class="metric-label">Rejected</div><div class="metric-sub">Did not qualify</div></div>
+    </section>
+
+    <section class="card evidence-grid">
+      <div class="history">
+        <div class="card-header">
+          <div><h2>Run history</h2><p>Select a row to inspect its evidence beside the table.</p></div>
+          <button class="btn" type="button">Filter</button>
+        </div>
+        <table>
+          <thead><tr><th>Run</th><th>Area</th><th>Found</th><th>Imported</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr class="selected-row">
+              <td><div class="run-name">#45 Apartments</div><div class="subline">29 Jul · 4m 13s</div></td>
+              <td>Ruiru</td><td>65</td><td>0</td>
+              <td><span class="badge run-status success">Success</span></td>
+            </tr>
+            <tr>
+              <td><div class="run-name">#44 Agencies</div><div class="subline">28 Jul · 2m 08s</div></td>
+              <td>Kilimani</td><td>12</td><td>1</td>
+              <td><span class="badge run-status success">Success</span></td>
+            </tr>
+            <tr>
+              <td><div class="run-name">#43 Apartments</div><div class="subline">28 Jul · 12m 00s</div></td>
+              <td>Thika</td><td>—</td><td>—</td>
+              <td><span class="badge run-status failed">Failed</span></td>
+            </tr>
+            <tr>
+              <td><div class="run-name">#42 Developers</div><div class="subline">27 Jul · 1m 41s</div></td>
+              <td>Nationwide</td><td>20</td><td>8</td>
+              <td><span class="badge run-status success">Success</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="detail">
+        <div class="detail-title">
+          <div><h3>Run #45 evidence</h3><p>Apartments · Ruiru · completed 29 Jul</p></div>
+          <span class="badge run-status success">Success</span>
+        </div>
+        <div class="outcome">
+          <div><strong>65</strong><span>Found</span></div>
+          <div><strong style="color:var(--info)">9</strong><span>Contacts</span></div>
+          <div><strong style="color:var(--warning)">20</strong><span>Duplicate</span></div>
+          <div><strong style="color:var(--destructive)">45</strong><span>Rejected</span></div>
+        </div>
+        <div class="audit-tabs">
+          <button class="audit-tab" type="button">Imported 0</button>
+          <button class="audit-tab active" type="button">Rejected 45</button>
+          <button class="audit-tab" type="button">Duplicates 20</button>
+        </div>
+        <div class="audit-row"><div><strong>Oakwood Residency</strong><span>Ruiru · no contact route</span></div><span>Rejected</span></div>
+        <div class="audit-row"><div><strong>Greenview Apartments</strong><span>Ruiru · no contact route</span></div><span>Rejected</span></div>
+        <div class="audit-row"><div><strong>Juja Road Homes</strong><span>Ruiru · outside selected qualifier</span></div><span>Rejected</span></div>
+        <button class="btn" type="button" style="width:100%;margin-top:12px">Open complete record audit</button>
+      </aside>
+    </section>
+
+    <section class="card health">
+      <div class="health-summary">
+        <div class="health-copy">
+          <div class="health-icon">!</div>
+          <div><h2>Run health</h2><p>3 failed runs across 2 known issue patterns in the recent 50-run window.</p></div>
+        </div>
+        <button class="btn technical" type="button">Review issues and technical details</button>
+      </div>
+    </section>
+    <p class="note">Design note: values are representative UI content. Production implementation must render live API data and must not infer lifetime coverage from the 50-run history window.</p>
+  </main>
+  <script>
+    const sourceTabs = [...document.querySelectorAll(".source-tab")];
+    const areas = [...document.querySelectorAll(".area")];
+    const areaPicker = document.getElementById("areaPicker");
+    const selectedPlan = document.getElementById("selectedPlan");
+    const developerPlan = document.getElementById("developerPlan");
+    const sourceBadge = document.getElementById("sourceBadge");
+    const selectedPlace = document.getElementById("selectedPlace");
+    const selectedQualifier = document.getElementById("selectedQualifier");
+    const searchCount = document.getElementById("searchCount");
+    const queryList = document.getElementById("queryList");
+    const moreQueries = document.getElementById("moreQueries");
+    const runButton = document.getElementById("runButton");
+    const areaSearch = document.getElementById("areaSearch");
+    let source = "apartments";
+    let selection = { name: "Kilimani", county: "Nairobi" };
+
+    const queriesFor = () => {
+      const suffix = `${selection.name}, ${selection.county} County, Kenya`;
+      if (source === "agencies") {
+        return [
+          `property management companies ${suffix}`,
+          `property managers ${suffix}`,
+        ];
+      }
+      return [
+        `apartments ${suffix}`,
+        `residential apartments ${suffix}`,
+        `flats for rent ${suffix}`,
+      ];
+    };
+
+    function renderPlan() {
+      const label = source === "apartments" ? "Apartments" : "Agencies";
+      sourceBadge.textContent = label;
+      selectedPlace.textContent = selection.name;
+      selectedQualifier.textContent = `${selection.name}, ${selection.county} County, Kenya`;
+      const queries = queriesFor();
+      queryList.innerHTML = queries.map((query, index) =>
+        `<div class="query-row"><span class="query-index">${index + 1}</span><code>${query}</code></div>`
+      ).join("");
+      searchCount.textContent = source === "apartments" ? "7 Google Maps searches" : "2 Google Maps searches";
+      moreQueries.textContent = source === "apartments" ? "+ 4 more apartment search variants" : "All search variants shown";
+      runButton.textContent = `Run ${label} in ${selection.name}`;
+    }
+
+    areas.forEach((area) => area.addEventListener("click", () => {
+      areas.forEach((item) => item.classList.remove("selected"));
+      area.classList.add("selected");
+      selection = { name: area.dataset.name, county: area.dataset.county };
+      renderPlan();
+    }));
+
+    sourceTabs.forEach((tab) => tab.addEventListener("click", () => {
+      sourceTabs.forEach((item) => item.classList.remove("active"));
+      tab.classList.add("active");
+      source = tab.dataset.source;
+      const isDevelopers = source === "developers";
+      areaPicker.style.display = isDevelopers ? "none" : "block";
+      selectedPlan.classList.toggle("visible", !isDevelopers);
+      developerPlan.style.display = isDevelopers ? "grid" : "none";
+      document.querySelector(".planner-grid").style.gridTemplateColumns = isDevelopers ? "1fr" : "";
+      if (!isDevelopers) renderPlan();
+    }));
+
+    areaSearch.addEventListener("input", () => {
+      const term = areaSearch.value.trim().toLowerCase();
+      areas.forEach((area) => {
+        const haystack = `${area.dataset.name} ${area.dataset.county}`.toLowerCase();
+        area.style.display = haystack.includes(term) ? "block" : "none";
+      });
+    });
+
+    renderPlan();
+  </script>
+</body>
+</html>
