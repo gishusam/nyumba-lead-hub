@@ -6,6 +6,7 @@
 - [2026-07-28 - Data Scraper pagination scope and national-location deferral](#2026-07-28---data-scraper-pagination-scope-and-national-location-deferral)
 - [2026-07-28 - Data Scraper pagination and Run Health implementation](#2026-07-28---data-scraper-pagination-and-run-health-implementation)
 - [2026-07-29 - Canonical design-system reference](#2026-07-29---canonical-design-system-reference)
+- [2026-07-29 - Application shell UX direction](#2026-07-29---application-shell-ux-direction)
 
 ## 2026-07-27 - Dashboard and lead-table API repair
 
@@ -38,3 +39,10 @@
 
 - `docs/design-system.md` is the locked reference for Nyumba Zetu's visual tokens, typography, spacing, primitives, scraper semantic colors, and coverage-honesty rules.
 - New scraper and command-center work should reuse the existing shadcn primitives and the documented semantic mapping instead of introducing parallel hand-rolled UI patterns.
+
+## 2026-07-29 - Application shell UX direction
+
+- The approved shell change is documented in `docs/superpowers/specs/2026-07-29-navbar-sticky-sidebar-design.md` on branch `navbar-sticky-sidebar`.
+- The top bar should use the full main-column width, allow global search to flex, and retain only functional account controls. The unused notification bell and broad global refresh action are intentionally removed rather than made to imply unsupported product capabilities.
+- Desktop navigation should remain viewport-sticky with safe internal overflow. Narrow layouts must preserve the existing mobile navigation model and prevent the sidebar from consuming page width.
+- Browser closure requires desktop and narrow-viewport proof across Dashboard, Data Scraper, Apartments, and at least one other route, with committed screenshots under `docs/assets/pr-navbar-sticky-sidebar/`.
