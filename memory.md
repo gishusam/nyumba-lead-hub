@@ -7,6 +7,7 @@
 - [2026-07-28 - Data Scraper pagination and Run Health implementation](#2026-07-28---data-scraper-pagination-and-run-health-implementation)
 - [2026-07-29 - Canonical design-system reference](#2026-07-29---canonical-design-system-reference)
 - [2026-07-29 - Application shell UX direction](#2026-07-29---application-shell-ux-direction)
+- [2026-07-29 - Guided scraper workspace and canonical location contract](#2026-07-29---guided-scraper-workspace-and-canonical-location-contract)
 
 ## 2026-07-27 - Dashboard and lead-table API repair
 
@@ -50,3 +51,15 @@
 - Implementation checkpoint: `427358c` makes one shared navigation body viewport-sticky on desktop and exposes it through a route-closing mobile sheet. `5d804ab` makes the top bar full-width, removes the fake refresh/notification controls, adds responsive account treatment, reports search failure, and opens selected global-search results in the existing `LeadDetailPanel`.
 - Scoped ESLint, `npx tsc --noEmit`, and the complete Vite client/SSR/Nitro production build pass. Disposable unauthenticated browser geometry checks at 1440x900 and 390x844 confirm sticky positioning, a working mobile sheet, and no horizontal overflow.
 - Authenticated real-data route/search verification, committed screenshots, push, and PR remain pending. A headed `agent-browser` session named `nyumba-navbar-qa` is open at `http://127.0.0.1:5000/signin` so the user can authenticate without sharing credentials.
+
+## 2026-07-29 - Guided scraper workspace and canonical location contract
+
+- The approved scraper direction is the Guided Workspace in `src/components/ScraperCommandWorkspace.tsx`, based on `docs/mockups/05-run-workspace-guided.html`. The compact comparison in `06-run-workspace-compact.html` was not chosen; `04-run-planner-FINAL.html` is retained as a superseded multi-area/phase-2 exploration.
+- Apartments and Agencies now select exactly one backend-owned canonical location ID. Developers accepts no location and displays nationwide directory enrichment. The frontend does not own, duplicate, or invent the location list.
+- Area state is framed as `Needs re-run`, `No recent runs`, or `Recently run`; do not present an area as generically successful. Only successful runs in the loaded history window establish recency. Exact normalized display-name matching replaces substring matching, and stale means older than the backend-provided seven-day threshold.
+- The board sorts stale areas oldest first, no-recent areas by existing tier only as a cold-start hint, and recent areas newest first. Tier is not observed scraper yield and must not be described as such.
+- The run preview shows every backend-provided search term using the canonical county-qualified term. It states the real 12-minute subprocess ceiling but intentionally does not estimate completion from the single 253-second historical Ruiru run.
+- `GET /api/scraper/options` supplies the 25 reviewed phase-1 locations, source search terms, recency threshold, and history-window size. Phase-2 web/KNBS import, historical duplicate repair, and observed-yield prioritisation are explicit follow-ups rather than hidden dependencies.
+- `src/routes/_app.scrape.tsx` removed the duplicate country/county/city controls, fake SVG geography, and default Thika selection. The existing Import Pipeline, Run History, Record Audit, and Run Health implementations remain in place. The first KPI is labelled `Runs Loaded`, since `/api/scraper/runs` returns a bounded recent window rather than lifetime totals.
+- Verification: all 16 frontend Node tests pass; scoped ESLint for the new workspace/planner passes; `npx tsc --noEmit` passes; the complete client/SSR/Nitro production build passes. Repository-wide lint remains blocked by the existing CRLF Prettier baseline across unrelated files.
+- Headed `agent-browser` verification exercised Apartments, Agencies, Developers, area search, canonical selection, exact query preview, and 1440×1000/390×844 layouts against a production-shaped local API. Screenshots are under `docs/assets/scraper-guided-workspace-20260729/`.

@@ -1,0 +1,630 @@
+<title>Run Planner — Production Shape</title>
+<style>
+  :root {
+    --radius:.75rem;
+    --background:oklch(0.995 0.002 240); --foreground:oklch(0.18 0.03 250);
+    --card:oklch(1 0 0); --primary:oklch(0.45 0.13 165); --primary-foreground:oklch(0.99 0.005 160);
+    --muted:oklch(0.97 0.008 250); --muted-foreground:oklch(0.5 0.02 250);
+    --accent:oklch(0.95 0.04 170); --accent-foreground:oklch(0.25 0.08 165);
+    --destructive:oklch(0.6 0.22 25); --success:oklch(0.66 0.16 155);
+    --warning:oklch(0.78 0.16 70); --warning-ink:oklch(0.42 0.11 70);
+    --info:oklch(0.62 0.16 245); --border:oklch(0.92 0.01 250);
+    --r-md:calc(var(--radius) - 2px); --r-lg:var(--radius); --r-xl:calc(var(--radius) + 4px);
+    --sans:"Inter",ui-sans-serif,system-ui,-apple-system,sans-serif;
+    --disp:"Plus Jakarta Sans","Inter",ui-sans-serif,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --fresh-bg:color-mix(in oklab,var(--success) 17%,white);
+    --fresh-bd:color-mix(in oklab,var(--success) 42%,white);
+    --fresh-ink:color-mix(in oklab,var(--success) 76%,black);
+    --stale-bg:color-mix(in oklab,var(--warning) 25%,white);
+    --stale-bd:color-mix(in oklab,var(--warning) 52%,white);
+    --stale-ink:var(--warning-ink);
+    --none-bd:oklch(0.89 0.01 250);
+    --shadow-sm:0 1px 2px rgb(17 24 39/.05);
+    --shadow-md:0 4px 14px -4px rgb(17 24 39/.10),0 1px 3px rgb(17 24 39/.05);
+    --shadow-lg:0 18px 44px -20px rgb(17 24 39/.24),0 2px 6px rgb(17 24 39/.05);
+    color-scheme:light;
+  }
+  :root[data-theme="dark"]{color-scheme:light;}
+  *{box-sizing:border-box;}
+  .pg{background:var(--background);color:var(--foreground);font-family:var(--sans);line-height:1.5;
+      -webkit-font-smoothing:antialiased;padding:32px 20px 90px;}
+  .wrap{max-width:1160px;margin:0 auto;}
+  h1,h2,h3{font-family:var(--disp);letter-spacing:-.015em;margin:0;text-wrap:balance;}
+  p{margin:0;} button{font-family:inherit;}
+  .tnum{font-variant-numeric:tabular-nums;}
+  svg.ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;
+         stroke-linecap:round;stroke-linejoin:round;flex:none;}
+  svg.ic.sm{width:13px;height:13px;}
+  .kick{font-size:11px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);}
+  .phead{border-bottom:1px solid var(--border);padding-bottom:22px;}
+  .plede{color:var(--muted-foreground);font-size:14.5px;margin-top:9px;max-width:68ch;}
+
+  .app{margin-top:24px;border:1px solid var(--border);border-radius:var(--r-xl);background:var(--card);
+       box-shadow:var(--shadow-lg);overflow:hidden;}
+  .appbar{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);}
+  .crumb{font-size:12.5px;color:var(--muted-foreground);} .crumb b{color:var(--foreground);font-weight:600;}
+  .seg{display:inline-flex;padding:3px;gap:2px;background:var(--muted);border:1px solid var(--border);
+       border-radius:var(--r-md);margin-left:auto;}
+  .seg button{display:inline-flex;align-items:center;gap:6px;border:none;background:none;cursor:pointer;
+              height:28px;padding:0 12px;border-radius:7px;font-size:12.5px;font-weight:550;
+              color:var(--muted-foreground);transition:background .14s,color .14s;}
+  .seg button[aria-pressed="true"]{background:var(--card);color:var(--foreground);box-shadow:var(--shadow-sm);}
+  .seg button:focus-visible{outline:2px solid var(--primary);outline-offset:1px;}
+
+  .body{display:grid;grid-template-columns:1fr 348px;}
+  @media(max-width:940px){.body{grid-template-columns:1fr;}}
+  .left{border-right:1px solid var(--border);}
+  @media(max-width:940px){.left{border-right:none;border-bottom:1px solid var(--border);}}
+
+  .ctrl{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .picker{position:relative;}
+  .pickbtn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:var(--r-md);
+           border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:600;cursor:pointer;
+           box-shadow:var(--shadow-sm);color:var(--foreground);}
+  .pickbtn:hover{background:var(--accent);border-color:color-mix(in oklab,var(--primary) 30%,var(--border));}
+  .pickbtn:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+  .pickbtn .cnt{font-size:11px;color:var(--muted-foreground);font-weight:500;}
+  .pop{position:absolute;top:40px;left:0;width:290px;background:var(--card);border:1px solid var(--border);
+       border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:20;padding:8px;display:none;}
+  .pop.open{display:block;}
+  .pop input{width:100%;height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;
+             font-size:13px;font-family:inherit;color:var(--foreground);background:var(--card);}
+  .pop input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 1px var(--primary);}
+  .poplist{max-height:250px;overflow-y:auto;margin-top:7px;}
+  .popitem{display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;cursor:pointer;
+           padding:7px 9px;border-radius:7px;font-size:12.5px;text-align:left;color:var(--foreground);}
+  .popitem:hover{background:var(--muted);}
+  .popitem[aria-current="true"]{background:var(--accent);color:var(--accent-foreground);font-weight:650;}
+  .popitem .n{flex:1;} .popitem .b{font-size:10.5px;color:var(--muted-foreground);}
+  .popitem .dot{height:7px;width:7px;border-radius:999px;flex:none;}
+  .popgrp{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+          color:var(--muted-foreground);padding:9px 9px 4px;}
+
+  .capbar{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;margin-left:auto;}
+  .slots{display:flex;gap:3px;}
+  .slots i{display:block;height:6px;width:20px;border-radius:3px;background:var(--border);transition:background .2s;}
+  .slots i.on{background:var(--primary);} .slots i.full{background:var(--warning);}
+  .slots i.over{background:var(--destructive);}
+
+  .board{padding:16px;}
+  .sechead{display:flex;align-items:center;gap:9px;margin:0 0 9px;}
+  .sechead:not(:first-child){margin-top:20px;}
+  .sechead .lbl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
+  .sechead .why{font-size:11px;color:var(--muted-foreground);}
+  .sechead .rule{flex:1;height:1px;background:var(--border);}
+  .s1 .lbl{color:var(--stale-ink);} .s2 .lbl{color:var(--primary);} .s3 .lbl{color:var(--muted-foreground);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:7px;}
+  .tile{position:relative;text-align:left;border:1px solid var(--none-bd);border-radius:9px;padding:9px 10px;
+        cursor:pointer;background:var(--card);transition:transform .12s,box-shadow .14s,border-color .14s;}
+  .tile:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
+  .tile:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+  .tile.f{background:var(--fresh-bg);border-color:var(--fresh-bd);}
+  .tile.s{background:var(--stale-bg);border-color:var(--stale-bd);}
+  .tile.on{border-color:var(--primary);box-shadow:0 0 0 2px color-mix(in oklab,var(--primary) 26%,white);}
+  .tile.lock{opacity:.4;cursor:not-allowed;} .tile.lock:hover{transform:none;box-shadow:none;}
+  .tile .nm{font-size:12.5px;font-weight:650;display:block;}
+  .tile .mt{font-size:10.5px;color:var(--muted-foreground);display:block;margin-top:2px;}
+  .tile.f .mt{color:color-mix(in oklab,var(--fresh-ink) 82%,white);}
+  .tile.s .mt{color:color-mix(in oklab,var(--stale-ink) 80%,white);}
+  .tile .seq{position:absolute;top:-7px;right:-7px;height:19px;width:19px;border-radius:999px;
+             background:var(--primary);color:#fff;font-size:10.5px;font-weight:700;display:grid;
+             place-items:center;box-shadow:var(--shadow-sm);}
+  .tier{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+        padding:1px 5px;border-radius:4px;margin-top:5px;border:1px solid;}
+  .t-prem{color:var(--primary);border-color:color-mix(in oklab,var(--primary) 30%,white);
+          background:color-mix(in oklab,var(--primary) 7%,white);}
+  .t-dens{color:color-mix(in oklab,var(--info) 76%,black);border-color:color-mix(in oklab,var(--info) 26%,white);
+          background:color-mix(in oklab,var(--info) 7%,white);}
+  .t-new{color:var(--muted-foreground);border-color:var(--border);background:var(--muted);}
+  .t-rev{color:var(--warning-ink);border-color:color-mix(in oklab,var(--warning) 34%,white);
+         background:color-mix(in oklab,var(--warning) 12%,white);}
+  .revnote{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:var(--warning-ink);
+           background:color-mix(in oklab,var(--warning) 10%,white);
+           border:1px solid color-mix(in oklab,var(--warning) 26%,white);
+           border-radius:8px;padding:9px 11px;margin-bottom:12px;}
+
+  .showall{margin-top:8px;border:1px dashed var(--border);background:none;border-radius:8px;width:100%;
+           padding:7px;font-size:12px;font-weight:600;color:var(--primary);cursor:pointer;}
+  .showall:hover{background:var(--accent);}
+  .collapsed{border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;
+             color:var(--muted-foreground);background:var(--muted);display:flex;align-items:center;gap:8px;
+             cursor:pointer;width:100%;text-align:left;}
+  .collapsed:hover{background:var(--card);}
+
+  .scope{margin:16px;border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;text-align:center;
+         background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 30%,white),var(--card));}
+  .scope h3{font-size:16px;} .scope p{font-size:12.5px;color:var(--muted-foreground);margin-top:6px;}
+  .scope .keep{margin-top:14px;font-size:11.5px;color:var(--primary);font-weight:600;}
+
+  /* plan */
+  .plan{padding:16px;display:flex;flex-direction:column;}
+  .planhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .planhead h3{font-size:15px;font-weight:700;}
+  .planhead .sub{font-size:11.5px;color:var(--muted-foreground);margin-top:2px;}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:650;padding:3px 9px;
+        border-radius:999px;background:var(--accent);color:var(--accent-foreground);}
+  .stops{margin:15px 0 4px;}
+  .stop{display:grid;grid-template-columns:24px 1fr auto;gap:10px;padding-bottom:14px;position:relative;}
+  .stop:last-child{padding-bottom:2px;}
+  .stop .rail{position:relative;display:flex;justify-content:center;}
+  .stop .num{height:22px;width:22px;border-radius:999px;background:var(--primary);color:#fff;font-size:11px;
+             font-weight:700;display:grid;place-items:center;z-index:2;}
+  .stop:not(:last-child) .rail::after{content:"";position:absolute;top:23px;bottom:-15px;width:2px;
+             background:var(--border);border-radius:2px;}
+  .stop .nm{font-size:13px;font-weight:650;}
+  .stop .q{font-family:var(--mono);font-size:10px;color:var(--muted-foreground);margin-top:3px;
+           background:var(--muted);border:1px solid var(--border);border-radius:5px;padding:3px 6px;
+           word-break:break-word;}
+  .stop .est{font-size:11.5px;font-weight:600;color:var(--muted-foreground);}
+  .stop .rm{border:none;background:none;cursor:pointer;color:var(--muted-foreground);padding:2px;border-radius:5px;}
+  .stop .rm:hover{color:var(--destructive);background:color-mix(in oklab,var(--destructive) 9%,white);}
+  .empty{padding:26px 12px;text-align:center;color:var(--muted-foreground);font-size:12.5px;
+         border:1px dashed var(--border);border-radius:var(--r-md);margin-top:14px;}
+
+  .budget{margin-top:8px;padding-top:13px;border-top:1px solid var(--border);}
+  .brow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .brow .k{font-size:11.5px;color:var(--muted-foreground);}
+  .brow .v{font-family:var(--disp);font-size:20px;font-weight:700;}
+  .track{height:8px;border-radius:999px;background:var(--muted);margin-top:8px;border:1px solid var(--border);
+         overflow:hidden;position:relative;}
+  .track .fill{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--primary);
+               transition:width .4s cubic-bezier(.4,0,.2,1),background .25s;}
+  .bmeta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted-foreground);margin-top:5px;}
+  .verdict{display:flex;gap:8px;font-size:11.5px;padding:9px 11px;border-radius:8px;margin-top:11px;border:1px solid;}
+  .v-ok{background:var(--fresh-bg);border-color:var(--fresh-bd);color:var(--fresh-ink);}
+  .v-warn{background:var(--stale-bg);border-color:var(--stale-bd);color:var(--stale-ink);}
+  .v-bad{background:color-mix(in oklab,var(--destructive) 10%,white);
+         border-color:color-mix(in oklab,var(--destructive) 30%,white);
+         color:color-mix(in oklab,var(--destructive) 74%,black);}
+  .run{margin-top:12px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+       height:38px;border-radius:var(--r-md);border:none;cursor:pointer;background:var(--primary);
+       color:#fff;font-size:13.5px;font-weight:650;box-shadow:0 1px 2px rgb(17 24 39/.14);
+       transition:filter .15s,transform .1s;}
+  .run:hover{filter:brightness(1.07);} .run:active{transform:translateY(1px);}
+  .run:disabled{opacity:.45;cursor:not-allowed;}
+  .run:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+
+  .notes{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
+  .nb{border:1px solid var(--border);border-radius:var(--r-md);background:var(--card);padding:14px 16px;}
+  .nb h4{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--primary);margin-bottom:7px;}
+  .nb p,.nb li{font-size:12.5px;color:var(--muted-foreground);}
+  .nb ul{margin:0;padding-left:15px;} .nb li{margin-bottom:4px;}
+  .nb code{font-family:var(--mono);font-size:11px;}
+  .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-foreground);}
+  .foot code{font-family:var(--mono);}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-play"><polygon points="7 4 19 12 7 20 7 4" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></g>
+  <g id="i-x"><path d="M18 6 6 18M6 6l12 12"/></g>
+  <g id="i-check"><path d="M20 6 9 17l-5-5"/></g>
+  <g id="i-alert"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></g>
+  <g id="i-clock"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></g>
+  <g id="i-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></g>
+  <g id="i-down"><path d="m6 9 6 6 6-6"/></g>
+  <g id="i-globe"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></g>
+</defs></svg>
+
+<div class="pg"><div class="wrap">
+
+  <header class="phead">
+    <div class="kick">Direction 01 · production shape</div>
+    <h1 style="font-size:29px;margin-top:7px;">Run Planner</h1>
+    <p class="plede">Now built on the <b>backend's real area list and scoring tiers</b>, sorted by what's actually
+      worth running next. Switch the source to see caps change, and watch what happens when a selection exceeds
+      the new cap.</p>
+  </header>
+
+  <div class="app">
+    <div class="appbar">
+      <svg class="ic" viewBox="0 0 24 24" style="color:var(--primary)"><use href="#i-pin"/></svg>
+      <span class="crumb">Lead Operations · <b>Acquisition Pipeline</b></span>
+      <div class="seg" role="group" aria-label="Source type">
+        <button data-src="apartments" aria-pressed="true">Apartments</button>
+        <button data-src="agencies" aria-pressed="false">Agencies</button>
+        <button data-src="developers" aria-pressed="false">Developers</button>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="left">
+        <div class="ctrl" id="ctrl">
+          <div class="picker">
+            <button class="pickbtn" id="pickbtn" aria-haspopup="listbox" aria-expanded="false">
+              <svg class="ic sm" viewBox="0 0 24 24" style="color:var(--primary)"><use href="#i-pin"/></svg>
+              <span id="picklbl">Nairobi Metro</span>
+              <span class="cnt" id="pickcnt">25 areas</span>
+              <svg class="ic sm" viewBox="0 0 24 24"><use href="#i-down"/></svg>
+            </button>
+            <div class="pop" id="pop" role="listbox" aria-label="Choose a region">
+              <input id="popsearch" placeholder="Search 47 counties…" aria-label="Search counties">
+              <div class="poplist" id="poplist"></div>
+            </div>
+          </div>
+          <div class="capbar"><span id="capt" class="tnum">1 / 2 areas</span><span class="slots" id="slots"></span></div>
+        </div>
+        <div id="boardhost"></div>
+      </div>
+
+      <div class="plan">
+        <div class="planhead">
+          <div><h3>Run plan</h3><div class="sub" id="plansub">Areas execute one after another</div></div>
+          <span class="pill"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-clock"/></svg>sequential</span>
+        </div>
+        <div class="stops" id="stops"></div>
+        <div class="budget" id="budget"></div>
+        <button class="run" id="run"><svg class="ic" viewBox="0 0 24 24"><use href="#i-play"/></svg>
+          <span id="runlbl">Run Scraper</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="nb"><h4>What changed</h4><ul>
+      <li>Uses the backend's real <code>DEFAULT_AREAS</code> (20) — <b>13 were unreachable</b> from the old UI</li>
+      <li>Tiers come from <code>PREMIUM_AREAS</code> / <code>HIGH_DENSITY_AREAS</code>, the same lists that drive lead scoring</li>
+      <li>Every area carries its true county, so the query qualifier is correct</li></ul></div>
+    <div class="nb"><h4>Sorted by actionability</h4><ul>
+      <li><b>Needs re-run</b> — stale first, oldest at the top</li>
+      <li><b>Best expansion bets</b> — never-run, premium before high-density</li>
+      <li><b>Recently done</b> — collapsed; it's already handled</li>
+      <li>With 2 slots, the board's job is to surface the best two, not list geography</li></ul></div>
+    <div class="nb"><h4>Query preview</h4><p>Each stop shows the exact Google Maps search it will run. A wrong
+      qualifier — the <code>"Thika Nairobi"</code> class of bug — becomes visible <i>before</i> you spend
+      4 minutes of worker time on it.</p></div>
+  </div>
+
+  <div class="foot">Area list, tiers and county assignments read from
+    <code>scraper/spiders/apartments.py</code>. Durations use the verified ~253s per apartments location and an
+    estimated ~110s for agencies (2 searches vs 7) against the 720s subprocess ceiling. County list is the 47
+    constitutional counties; areas outside the bundled set are shown as an honest empty state.</div>
+
+</div></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // county, tier: p=premium, d=high-density, null=untiered/new
+  // src: b=in backend DEFAULT_AREAS, f=frontend-only today
+  var AREAS = [
+    {n:"Kilimani",     c:"Nairobi",  t:"p", src:"b", s:"n"},
+    {n:"Kileleshwa",   c:"Nairobi",  t:"p", src:"b", s:"n"},
+    {n:"Westlands",    c:"Nairobi",  t:"p", src:"b", s:"f", age:"2d"},
+    {n:"Lavington",    c:"Nairobi",  t:"p", src:"b", s:"f", age:"4d"},
+    {n:"Muthaiga",     c:"Nairobi",  t:"p", src:"b", s:"n"},
+    {n:"Karen",        c:"Nairobi",  t:"p", src:"b", s:"n"},
+    {n:"Parklands",    c:"Nairobi",  t:"p", src:"b", s:"f", age:"2d"},
+    {n:"Spring Valley",c:"Nairobi",  t:"p", src:"b", s:"n"},
+    {n:"Runda",        c:"Nairobi",  t:"p", src:"b", s:"s", age:"26d"},
+    {n:"South B",      c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"South C",      c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"Kasarani",     c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"Ngara",        c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"Pangani",      c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"Embakasi",     c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"Langata",      c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"Donholm",      c:"Nairobi",  t:"d", src:"b", s:"n"},
+    {n:"Kahawa West",  c:"Nairobi",  t:null,src:"b", s:"n"},
+    {n:"Upper Hill",   c:"Nairobi",  t:null,src:"f", s:"n"},
+    {n:"Ruaka",        c:"Kiambu",   t:"d", src:"b", s:"n"},
+    {n:"Kiambu",       c:"Kiambu",   t:null,src:"f", s:"f", age:"3d"},
+    {n:"Ruiru",        c:"Kiambu",   t:null,src:"f", s:"f", age:"5d"},
+    {n:"Thika",        c:"Kiambu",   t:null,src:"f", s:"s", age:"21d"},
+    {n:"Syokimau",     c:"Machakos", t:"d", src:"b", s:"n"},
+    {n:"Athi River",   c:"Machakos", t:null,src:"f", s:"n"}
+  ];
+
+  var COUNTIES = ["Baringo","Bomet","Bungoma","Busia","Elgeyo-Marakwet","Embu","Garissa","Homa Bay","Isiolo",
+    "Kajiado","Kakamega","Kericho","Kiambu","Kilifi","Kirinyaga","Kisii","Kisumu","Kitui","Kwale","Laikipia",
+    "Lamu","Machakos","Makueni","Mandera","Marsabit","Meru","Migori","Mombasa","Murang'a","Nairobi","Nakuru",
+    "Nandi","Narok","Nyamira","Nyandarua","Nyeri","Samburu","Siaya","Taita-Taveta","Tana River","Tharaka-Nithi",
+    "Trans Nzoia","Turkana","Uasin Gishu","Vihiga","Wajir","West Pokot"];
+
+  /* ---------- PHASE 2: national urban centres ----------
+     rank 1 = principal town / county HQ, 2 = secondary centre.
+     Every entry is provenance "review": the name is real, but population and the
+     final KNBS 2019 reconciliation are NOT yet imported. Nothing here is scraped
+     until a human signs the row off. */
+  var NATIONAL = {
+    "Mombasa":[["Mombasa",1],["Nyali",2],["Bamburi",2],["Likoni",2]],
+    "Kwale":[["Ukunda",1],["Diani",2],["Kwale",2]],
+    "Kilifi":[["Kilifi",1],["Malindi",1],["Mtwapa",2],["Watamu",2]],
+    "Tana River":[["Hola",1],["Garsen",2]],
+    "Lamu":[["Lamu",1],["Mpeketoni",2]],
+    "Taita-Taveta":[["Voi",1],["Wundanyi",2],["Taveta",2],["Mwatate",2]],
+    "Garissa":[["Garissa",1],["Dadaab",2]],
+    "Wajir":[["Wajir",1]],
+    "Mandera":[["Mandera",1]],
+    "Marsabit":[["Marsabit",1],["Moyale",2]],
+    "Isiolo":[["Isiolo",1]],
+    "Meru":[["Meru",1],["Maua",2],["Nkubu",2],["Timau",2]],
+    "Tharaka-Nithi":[["Chuka",1],["Marimanti",2]],
+    "Embu":[["Embu",1],["Runyenjes",2],["Siakago",2]],
+    "Kitui":[["Kitui",1],["Mwingi",2]],
+    "Machakos":[["Machakos",1],["Mlolongo",2],["Kangundo",2]],
+    "Makueni":[["Wote",1],["Emali",2],["Makindu",2]],
+    "Nyandarua":[["Ol Kalou",1],["Njabini",2]],
+    "Nyeri":[["Nyeri",1],["Karatina",2],["Othaya",2]],
+    "Kirinyaga":[["Kerugoya",1],["Sagana",2],["Kutus",2]],
+    "Murang'a":[["Murang'a",1],["Kenol",2],["Maragua",2],["Kangema",2]],
+    "Kiambu":[["Limuru",2],["Kikuyu",2],["Juja",2],["Githunguri",2],["Karuri",2]],
+    "Turkana":[["Lodwar",1],["Kakuma",2],["Lokichogio",2]],
+    "West Pokot":[["Kapenguria",1],["Makutano",2]],
+    "Samburu":[["Maralal",1]],
+    "Trans Nzoia":[["Kitale",1]],
+    "Uasin Gishu":[["Eldoret",1]],
+    "Elgeyo-Marakwet":[["Iten",1],["Kapsowar",2]],
+    "Nandi":[["Kapsabet",1],["Nandi Hills",2]],
+    "Baringo":[["Kabarnet",1],["Eldama Ravine",2]],
+    "Laikipia":[["Nanyuki",1],["Nyahururu",1],["Rumuruti",2]],
+    "Nakuru":[["Nakuru",1],["Naivasha",1],["Molo",2],["Gilgil",2],["Njoro",2]],
+    "Narok":[["Narok",1],["Kilgoris",2]],
+    "Kajiado":[["Kitengela",1],["Ngong",1],["Ongata Rongai",1],["Kajiado",2],["Isinya",2]],
+    "Kericho":[["Kericho",1],["Litein",2]],
+    "Bomet":[["Bomet",1],["Sotik",2]],
+    "Kakamega":[["Kakamega",1],["Mumias",2],["Malava",2],["Butere",2]],
+    "Vihiga":[["Vihiga",1],["Mbale",2],["Luanda",2]],
+    "Bungoma":[["Bungoma",1],["Webuye",2],["Kimilili",2]],
+    "Busia":[["Busia",1],["Malaba",2],["Nambale",2]],
+    "Siaya":[["Siaya",1],["Bondo",2],["Ugunja",2]],
+    "Kisumu":[["Kisumu",1],["Ahero",2],["Maseno",2],["Muhoroni",2]],
+    "Homa Bay":[["Homa Bay",1],["Oyugis",2],["Kendu Bay",2],["Mbita",2]],
+    "Migori":[["Migori",1],["Rongo",2],["Awendo",2],["Isebania",2]],
+    "Kisii":[["Kisii",1],["Ogembo",2],["Suneka",2]],
+    "Nyamira":[["Nyamira",1],["Keroka",2]]
+  };
+  Object.keys(NATIONAL).forEach(function(county){
+    NATIONAL[county].forEach(function(row){
+      if(AREAS.some(function(a){return a.n===row[0];})) return;   // op areas win
+      AREAS.push({n:row[0], c:county, t:null, src:"uc", s:"n", rank:row[1]});
+    });
+  });
+
+  var SRC = {
+    apartments:{cap:2, per:253, label:"Apartments", kw:"apartments"},
+    agencies:  {cap:4, per:110, label:"Agencies",   kw:"property management companies"},
+    developers:{cap:0, per:0,   label:"Developers", kw:null}
+  };
+  var LIMIT = 720;
+
+  var src = "apartments", region = "METRO", sel = ["Kilimani"], showAll = false, showDone = false;
+
+  function cfg(){ return SRC[src]; }
+  function fmt(s){ var m=Math.floor(s/60); return m+"m "+String(s%60).padStart(2,"0")+"s"; }
+  // METRO = the operational areas only (backend list + legacy frontend zones),
+  // never the phase-2 national towns — otherwise the default view becomes 140 tiles.
+  function inRegion(a){ return region==="METRO" ? a.src!=="uc" : a.c===region; }
+  function pool(){ return AREAS.filter(inRegion); }
+  function find(n){ return AREAS.filter(function(a){return a.n===n;})[0]; }
+  // badge reflects where the area came from and how much we trust it
+  function badge(a){
+    if(a.t==="p") return ["Premium","t-prem"];
+    if(a.t==="d") return ["High density","t-dens"];
+    if(a.src==="uc") return ["Town · review","t-rev"];
+    if(a.src==="f")  return ["Unvetted","t-rev"];
+    return ["Untiered","t-new"];        // in backend list but in neither scoring set
+  }
+  function sortRank(a){
+    if(a.t==="p") return 0;
+    if(a.t==="d") return 1;
+    if(a.src==="f") return 2;
+    if(a.src==="uc") return 2 + (a.rank||2);   // principal town before secondary
+    return 5;
+  }
+  function ageNum(a){ return parseInt((a.age||"0").replace("d",""),10)||0; }
+  function qualified(a){ return a.n+", "+a.c+" County, Kenya"; }
+
+  /* ---------- county picker ---------- */
+  var pop=document.getElementById("pop"), pickbtn=document.getElementById("pickbtn");
+  function covOf(c){
+    var list=AREAS.filter(function(a){return a.c===c;});
+    if(!list.length) return null;
+    if(list.some(function(a){return a.s==="f";})) return "f";
+    if(list.some(function(a){return a.s==="s";})) return "s";
+    return "n";
+  }
+  function renderPop(q){
+    q=(q||"").toLowerCase();
+    var host=document.getElementById("poplist"), h="";
+    if(!q) h+='<div class="popgrp">Default</div>'
+      + '<button class="popitem" data-r="METRO"'+(region==="METRO"?' aria-current="true"':'')+'>'
+      + '<span class="dot" style="background:var(--primary)"></span><span class="n">Nairobi Metro</span>'
+      + '<span class="b">25 areas</span></button>';
+    h+='<div class="popgrp">Counties · 47</div>';
+    COUNTIES.filter(function(c){return c.toLowerCase().indexOf(q)>=0;}).forEach(function(c){
+      var n=AREAS.filter(function(a){return a.c===c;}).length, cv=covOf(c);
+      var col = cv==="f"?"var(--success)":cv==="s"?"var(--warning)":"var(--border)";
+      h+='<button class="popitem" data-r="'+c+'"'+(region===c?' aria-current="true"':'')+'>'
+       + '<span class="dot" style="background:'+col+'"></span><span class="n">'+c+'</span>'
+       + '<span class="b">'+(n?n+" areas":"—")+'</span></button>';
+    });
+    host.innerHTML=h;
+    host.querySelectorAll(".popitem").forEach(function(b){
+      b.addEventListener("click",function(){
+        region=b.dataset.r; showAll=false; pop.classList.remove("open");
+        pickbtn.setAttribute("aria-expanded","false"); render();
+      });
+    });
+  }
+  pickbtn.addEventListener("click",function(){
+    var open=!pop.classList.contains("open");
+    pop.classList.toggle("open",open);
+    pickbtn.setAttribute("aria-expanded",String(open));
+    if(open){ renderPop(""); document.getElementById("popsearch").value=""; document.getElementById("popsearch").focus(); }
+  });
+  document.getElementById("popsearch").addEventListener("input",function(e){ renderPop(e.target.value); });
+  document.addEventListener("click",function(e){
+    if(!pop.contains(e.target) && !pickbtn.contains(e.target)){
+      pop.classList.remove("open"); pickbtn.setAttribute("aria-expanded","false");
+    }
+  });
+
+  /* ---------- selection ---------- */
+  function toggle(n){
+    var i=sel.indexOf(n);
+    if(i>=0) sel.splice(i,1);
+    else{ if(sel.length>=cfg().cap) return; sel.push(n); }
+    render();
+  }
+
+  /* ---------- board ---------- */
+  function renderBoard(){
+    var host=document.getElementById("boardhost");
+
+    if(src==="developers"){
+      host.innerHTML='<div class="scope"><svg class="ic" viewBox="0 0 24 24" style="width:26px;height:26px;color:var(--primary)"><use href="#i-globe"/></svg>'
+        +'<h3 style="margin-top:8px">Nationwide directory enrichment</h3>'
+        +'<p>Developers enriches an existing national directory. It takes no geography, so the area picker is hidden.</p>'
+        +(sel.length?'<div class="keep">✓ Your '+sel.length+' selected area'+(sel.length>1?"s are":" is")+' kept for when you switch back</div>':"")
+        +'</div>';
+      return;
+    }
+
+    var list=pool();
+    if(!list.length){
+      host.innerHTML='<div class="scope"><h3>No places bundled for '+region+' yet</h3>'
+        +'<p>This county has no entries in the dataset.</p></div>';
+      return;
+    }
+    // phase-2 entries are named-but-unverified until the KNBS import lands
+    var needReview=list.filter(function(a){return a.src==="uc"||a.src==="f";}).length;
+
+    var stale=list.filter(function(a){return a.s==="s";}).sort(function(a,b){return ageNum(b)-ageNum(a);});
+    var never=list.filter(function(a){return a.s==="n";}).sort(function(a,b){
+      return sortRank(a)-sortRank(b) || a.n.localeCompare(b.n);
+    });
+    var fresh=list.filter(function(a){return a.s==="f";}).sort(function(a,b){return ageNum(a)-ageNum(b);});
+
+    var h="";
+    if(needReview){
+      h+='<div class="revnote"><svg class="ic sm" viewBox="0 0 24 24" style="margin-top:1px"><use href="#i-alert"/></svg>'
+       +'<span><b>'+needReview+' place'+(needReview>1?"s":"")+' pending review.</b> Names are real, but population '
+       +'and the KNBS 2019 reconciliation aren\'t imported yet — a human signs each row off before it can be scraped.</span></div>';
+    }
+    if(stale.length){
+      h+=sec("s1","Needs re-run","coverage has decayed")+'<div class="grid">'+stale.map(tile).join("")+'</div>';
+    }
+    if(never.length){
+      var shown=showAll?never:never.slice(0,8);
+      h+=sec("s2","Best expansion bets","never run · premium first")+'<div class="grid">'+shown.map(tile).join("")+'</div>';
+      if(never.length>8) h+='<button class="showall" id="showall">'
+        +(showAll?"Show fewer":"Show all "+never.length+" areas")+'</button>';
+    }
+    if(fresh.length){
+      h+=sec("s3","Recently done","already covered");
+      if(showDone) h+='<div class="grid">'+fresh.map(tile).join("")+'</div>';
+      else h+='<button class="collapsed" id="showdone"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-check"/></svg>'
+        +fresh.length+' areas scraped in the last week — '+fresh.map(function(a){return a.n;}).join(", ")+'</button>';
+    }
+    host.innerHTML='<div class="board">'+h+'</div>';
+
+    host.querySelectorAll(".tile").forEach(function(b){
+      b.addEventListener("click",function(){ if(!b.classList.contains("lock")) toggle(b.dataset.n); });
+    });
+    var sa=document.getElementById("showall");
+    if(sa) sa.addEventListener("click",function(){ showAll=!showAll; render(); });
+    var sd=document.getElementById("showdone");
+    if(sd) sd.addEventListener("click",function(){ showDone=true; render(); });
+  }
+  function sec(cls,lbl,why){
+    return '<div class="sechead '+cls+'"><span class="lbl">'+lbl+'</span>'
+      +'<span class="why">'+why+'</span><span class="rule"></span></div>';
+  }
+  function tile(a){
+    var on=sel.indexOf(a.n)>=0, lock=!on&&sel.length>=cfg().cap;
+    var meta=a.s==="f"?"Fresh · "+a.age:a.s==="s"?"Stale · "+a.age:"No recent runs";
+    var bd=badge(a);
+    return '<button class="tile '+a.s+(on?" on":"")+(lock?" lock":"")+'" data-n="'+a.n+'"'
+      +(lock?' aria-disabled="true"':'')+' aria-pressed="'+on+'">'
+      +(on?'<span class="seq">'+(sel.indexOf(a.n)+1)+'</span>':"")
+      +'<span class="nm">'+a.n+'</span><span class="mt">'+meta+'</span>'
+      +'<span class="tier '+bd[1]+'">'+bd[0]+'</span></button>';
+  }
+
+  /* ---------- plan ---------- */
+  function renderPlan(){
+    var stops=document.getElementById("stops"), bud=document.getElementById("budget");
+    var run=document.getElementById("run"), rl=document.getElementById("runlbl");
+    var sub=document.getElementById("plansub");
+
+    if(src==="developers"){
+      sub.textContent="One nationwide pass";
+      stops.innerHTML='<div class="empty">No areas needed.<br>Developers runs over the whole directory.</div>';
+      bud.innerHTML=""; run.disabled=false; rl.textContent="Run directory enrichment";
+      return;
+    }
+    sub.textContent="Areas execute one after another";
+
+    if(!sel.length){
+      stops.innerHTML='<div class="empty">Nothing selected.<br>Pick up to '+cfg().cap+' areas from the board.</div>';
+      bud.innerHTML=""; run.disabled=true; rl.textContent="Select an area"; return;
+    }
+
+    stops.innerHTML=sel.map(function(n,i){
+      var a=find(n);
+      return '<div class="stop"><div class="rail"><span class="num">'+(i+1)+'</span></div>'
+        +'<div><div class="nm">'+a.n+'</div>'
+        +'<div class="q">'+cfg().kw+' '+qualified(a)+'</div></div>'
+        +'<div style="display:flex;align-items:flex-start;gap:7px;"><span class="est tnum">~'+fmt(cfg().per)+'</span>'
+        +'<button class="rm" data-n="'+a.n+'" aria-label="Remove '+a.n+'">'
+        +'<svg class="ic sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div></div>';
+    }).join("");
+    stops.querySelectorAll(".rm").forEach(function(b){
+      b.addEventListener("click",function(){ toggle(b.dataset.n); });
+    });
+
+    var over = sel.length>cfg().cap;
+    var total=sel.length*cfg().per, ratio=total/LIMIT;
+    var t = over ? "bad" : ratio>.92 ? "bad" : ratio>.7 ? "warn" : "ok";
+    var col = t==="bad"?"var(--destructive)":t==="warn"?"var(--warning)":"var(--primary)";
+    var msg = over
+      ? "Over the "+cfg().label+" limit of "+cfg().cap+". Remove "+(sel.length-cfg().cap)
+        +" area"+(sel.length-cfg().cap>1?"s":"")+" to run — nothing was dropped for you."
+      : ratio>.92 ? "Over the safe ceiling — the worker may be killed mid-run."
+      : ratio>.7  ? "Close to the ceiling. A slow area could push this over."
+      : "Comfortably inside the worker limit.";
+
+    bud.innerHTML='<div class="brow"><span class="k">Estimated total</span>'
+      +'<span class="v tnum">'+fmt(total)+'</span></div>'
+      +'<div class="track"><span class="fill" style="width:'+Math.min(100,ratio*100)+'%;background:'+col+'"></span></div>'
+      +'<div class="bmeta"><span>'+sel.length+' × ~'+fmt(cfg().per)+' sequential</span>'
+      +'<span>ceiling '+fmt(LIMIT)+'</span></div>'
+      +'<div class="verdict v-'+t+'"><svg class="ic sm" viewBox="0 0 24 24" style="margin-top:1px">'
+      +'<use href="#'+(t==="ok"?"i-check":"i-alert")+'"/></svg><span>'+msg+'</span></div>';
+
+    run.disabled=over;
+    rl.textContent= over ? "Selection over limit"
+      : "Run Scraper · "+sel.length+" area"+(sel.length>1?"s":"");
+  }
+
+  /* ---------- chrome ---------- */
+  function renderCtrl(){
+    document.getElementById("ctrl").style.display = src==="developers" ? "none" : "flex";
+    document.getElementById("picklbl").textContent = region==="METRO" ? "Nairobi Metro" : region+" County";
+    var n=pool().length;
+    document.getElementById("pickcnt").textContent = n?n+" areas":"no areas";
+    var s="", cap=cfg().cap;
+    for(var i=0;i<Math.max(cap,sel.length);i++){
+      s+='<i class="'+(i>=cap?"over":i<sel.length?(sel.length>=cap?"full":"on"):"")+'"></i>';
+    }
+    document.getElementById("slots").innerHTML=s;
+    document.getElementById("capt").textContent=sel.length+" / "+cap+" areas";
+  }
+
+  function render(){ renderCtrl(); renderBoard(); renderPlan(); }
+
+  document.querySelectorAll(".seg button").forEach(function(b){
+    b.addEventListener("click",function(){
+      document.querySelectorAll(".seg button").forEach(function(o){
+        o.setAttribute("aria-pressed",String(o===b));
+      });
+      src=b.dataset.src; showAll=false; render();   // selection is preserved, never truncated
+    });
+  });
+
+  render();
+})();
+</script>

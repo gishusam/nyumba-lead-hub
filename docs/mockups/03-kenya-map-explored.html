@@ -1,0 +1,671 @@
+<title>Direction 02 — Kenya Coverage Map</title>
+<style>
+  :root {
+    --radius: 0.75rem;
+    --background: oklch(0.995 0.002 240);
+    --foreground: oklch(0.18 0.03 250);
+    --card: oklch(1 0 0);
+    --primary: oklch(0.45 0.13 165);
+    --primary-foreground: oklch(0.99 0.005 160);
+    --muted: oklch(0.97 0.008 250);
+    --muted-foreground: oklch(0.5 0.02 250);
+    --accent: oklch(0.95 0.04 170);
+    --accent-foreground: oklch(0.25 0.08 165);
+    --destructive: oklch(0.6 0.22 25);
+    --success: oklch(0.66 0.16 155);
+    --warning: oklch(0.78 0.16 70);
+    --warning-ink: oklch(0.42 0.11 70);
+    --info: oklch(0.62 0.16 245);
+    --border: oklch(0.92 0.01 250);
+    --r-md: calc(var(--radius) - 2px);
+    --r-lg: var(--radius);
+    --r-xl: calc(var(--radius) + 4px);
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --disp: "Plus Jakarta Sans", "Inter", ui-sans-serif, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+    --fresh-bg: color-mix(in oklab, var(--success) 20%, white);
+    --fresh-bd: color-mix(in oklab, var(--success) 48%, white);
+    --fresh-ink: color-mix(in oklab, var(--success) 76%, black);
+    --stale-bg: color-mix(in oklab, var(--warning) 28%, white);
+    --stale-bd: color-mix(in oklab, var(--warning) 55%, white);
+    --stale-ink: var(--warning-ink);
+    --none-bg: oklch(0.94 0.006 250);
+    --none-bd: oklch(0.86 0.01 250);
+    --none-ink: var(--muted-foreground);
+
+    --shadow-sm: 0 1px 2px rgb(17 24 39 / .05);
+    --shadow-md: 0 4px 14px -4px rgb(17 24 39 / .10), 0 1px 3px rgb(17 24 39 / .05);
+    --shadow-lg: 0 18px 44px -20px rgb(17 24 39 / .24), 0 2px 6px rgb(17 24 39 / .05);
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] { color-scheme: light; }
+  * { box-sizing: border-box; }
+
+  .pg { background: var(--background); color: var(--foreground); font-family: var(--sans);
+        line-height: 1.5; -webkit-font-smoothing: antialiased; padding: 34px 20px 90px; }
+  .wrap { max-width: 1020px; margin: 0 auto; }
+  h1,h2,h3,h4 { font-family: var(--disp); letter-spacing: -.015em; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  button { font-family: inherit; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  svg.ic { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9;
+           stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  svg.ic.sm { width: 13px; height: 13px; }
+
+  .kick { font-size: 11px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); }
+  .phead { border-bottom: 1px solid var(--border); padding-bottom: 22px; }
+  .plede { color: var(--muted-foreground); font-size: 14.5px; margin-top: 9px; max-width: 68ch; }
+
+  /* ---------- app shell ---------- */
+  .app { margin-top: 24px; border: 1px solid var(--border); border-radius: var(--r-xl);
+         background: var(--card); box-shadow: var(--shadow-lg); overflow: hidden; }
+  .appbar { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+  .appbar .crumb { font-size: 12.5px; color: var(--muted-foreground); }
+  .appbar .crumb b { color: var(--foreground); font-weight: 600; }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted);
+         border: 1px solid var(--border); border-radius: var(--r-md); margin-left: auto; }
+  .seg button { border: none; background: none; cursor: pointer; height: 28px; padding: 0 12px;
+                border-radius: 7px; font-size: 12.5px; font-weight: 550; color: var(--muted-foreground);
+                transition: background .14s, color .14s; }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); box-shadow: var(--shadow-sm); }
+  .seg button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+  .body { display: grid; grid-template-columns: 1fr 330px; gap: 0; }
+  @media (max-width: 920px) { .body { grid-template-columns: 1fr; } }
+
+  /* ---------- map ---------- */
+  .mapcol { border-right: 1px solid var(--border); position: relative; }
+  @media (max-width: 920px) { .mapcol { border-right: none; border-bottom: 1px solid var(--border); } }
+  .maptop { display: flex; align-items: center; gap: 12px; padding: 11px 16px;
+            border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .maptop .t { font-size: 13px; font-weight: 650; font-family: var(--disp); }
+  .maptop .sub { font-size: 11.5px; color: var(--muted-foreground); }
+  .legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted-foreground); margin-left: auto; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { height: 8px; width: 8px; border-radius: 999px; border: 1px solid; }
+  .lg-f { background: var(--fresh-bg); border-color: var(--fresh-bd); }
+  .lg-s { background: var(--stale-bg); border-color: var(--stale-bd); }
+  .lg-n { background: var(--none-bg); border-color: var(--none-bd); }
+
+  .stage { position: relative; background:
+      radial-gradient(115% 80% at 50% 0%, color-mix(in oklab, var(--accent) 34%, white) 0%, var(--card) 66%); }
+  #map { display: block; width: 100%; height: 640px; }
+  @media (max-width: 560px) { #map { height: 440px; } }
+
+  .backbtn { position: absolute; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 7px;
+             height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--border);
+             background: color-mix(in oklab, var(--card) 92%, transparent); backdrop-filter: blur(6px);
+             font-size: 12.5px; font-weight: 600; cursor: pointer; color: var(--foreground);
+             box-shadow: var(--shadow-md); opacity: 0; pointer-events: none;
+             transform: translateX(-6px); transition: opacity .28s, transform .28s; }
+  .backbtn.show { opacity: 1; pointer-events: auto; transform: none; }
+  .backbtn:hover { background: var(--card); }
+  .backbtn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  .zoomtitle { position: absolute; top: 14px; right: 16px; text-align: right;
+               opacity: 0; transform: translateY(-4px); transition: opacity .3s .12s, transform .3s .12s; }
+  .zoomtitle.show { opacity: 1; transform: none; }
+  .zoomtitle .n { font-family: var(--disp); font-size: 19px; font-weight: 700; letter-spacing: -.02em; }
+  .zoomtitle .m { font-size: 11.5px; color: var(--muted-foreground); }
+
+  .county { cursor: pointer; }
+  .county:focus-visible { outline: none; }
+  .county:focus-visible .ring { opacity: 1; }
+  .area { cursor: pointer; }
+  .area:focus-visible { outline: none; }
+  .area:focus-visible .aring { opacity: 1; }
+
+  /* ---------- side ---------- */
+  .side { padding: 16px; display: flex; flex-direction: column; }
+  .sect { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted-foreground); }
+
+  .hint { margin-top: 12px; border: 1px dashed var(--border); border-radius: var(--r-md);
+          padding: 18px 14px; text-align: center; color: var(--muted-foreground); font-size: 12.5px; }
+
+  .arealist { margin-top: 11px; display: flex; flex-direction: column; gap: 6px; }
+  .arow { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--border);
+          border-radius: 9px; background: var(--card); cursor: pointer; text-align: left; width: 100%;
+          transition: border-color .14s, background .14s, transform .12s; }
+  .arow:hover { border-color: color-mix(in oklab, var(--primary) 32%, var(--border)); transform: translateX(2px); }
+  .arow.on { border-color: var(--primary); background: color-mix(in oklab, var(--accent) 55%, white); }
+  .arow.dim { opacity: .45; cursor: not-allowed; }
+  .arow:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .arow .bx { height: 16px; width: 16px; border-radius: 5px; border: 1.6px solid var(--border);
+              display: grid; place-items: center; flex: none; color: #fff; }
+  .arow.on .bx { background: var(--primary); border-color: var(--primary); }
+  .arow .nm { font-size: 12.5px; font-weight: 600; flex: 1; }
+  .arow .st { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid; }
+  .s-f { background: var(--fresh-bg); border-color: var(--fresh-bd); color: var(--fresh-ink); }
+  .s-s { background: var(--stale-bg); border-color: var(--stale-bd); color: var(--stale-ink); }
+  .s-n { background: var(--none-bg); border-color: var(--none-bd); color: var(--none-ink); }
+
+  .tray { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; min-height: 24px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 5px 4px 11px;
+          background: var(--accent); color: var(--accent-foreground); font-size: 11.5px; font-weight: 600;
+          animation: pop .22s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .chip button { border: none; background: color-mix(in oklab, var(--primary) 17%, white); cursor: pointer;
+                 height: 16px; width: 16px; border-radius: 999px; display: grid; place-items: center; color: inherit; }
+  .chip button:hover { background: color-mix(in oklab, var(--primary) 32%, white); }
+
+  .capbar { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 600; margin-top: 11px; }
+  .slots { display: flex; gap: 3px; margin-left: auto; }
+  .slots i { display: block; height: 6px; width: 22px; border-radius: 3px; background: var(--border); transition: background .2s; }
+  .slots i.on { background: var(--primary); } .slots i.full { background: var(--warning); }
+
+  .budget { margin-top: 10px; }
+  .brow { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted-foreground); }
+  .brow b { color: var(--foreground); font-weight: 650; }
+  .track { height: 7px; border-radius: 999px; background: var(--muted); margin-top: 6px;
+           border: 1px solid var(--border); overflow: hidden; position: relative; }
+  .track .fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--primary);
+                 transition: width .4s cubic-bezier(.4,0,.2,1), background .25s; }
+
+  .run { margin-top: 12px; width: 100%; display: inline-flex; align-items: center; justify-content: center;
+         gap: 8px; height: 38px; border-radius: var(--r-md); border: none; cursor: pointer;
+         background: var(--primary); color: var(--primary-foreground); font-size: 13.5px; font-weight: 650;
+         box-shadow: 0 1px 2px rgb(17 24 39 / .14); transition: filter .15s, transform .1s; }
+  .run:hover { filter: brightness(1.07); } .run:active { transform: translateY(1px); }
+  .run:disabled { opacity: .45; cursor: not-allowed; }
+  .run:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* ---------- motion notes ---------- */
+  .notes { margin-top: 26px; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 11px; margin-top: 13px; }
+  .step { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--card); padding: 13px 15px; }
+  .step .ph { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--primary); letter-spacing: .04em; }
+  .step .h { font-size: 13px; font-weight: 650; margin-top: 4px; font-family: var(--disp); }
+  .step .d { font-size: 12px; color: var(--muted-foreground); margin-top: 5px; }
+  .step .tm { font-family: var(--mono); font-size: 10.5px; color: var(--muted-foreground); margin-top: 7px;
+              padding-top: 6px; border-top: 1px solid var(--border); }
+
+  .note { display: flex; gap: 10px; font-size: 12.5px; color: var(--muted-foreground);
+          background: color-mix(in oklab, var(--warning) 10%, white);
+          border: 1px solid color-mix(in oklab, var(--warning) 26%, white);
+          border-radius: var(--r-md); padding: 12px 14px; margin-top: 18px; }
+  .note b { color: var(--warning-ink); }
+  .foot { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted-foreground); }
+  .foot code { font-family: var(--mono); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-play"><polygon points="7 4 19 12 7 20 7 4" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></g>
+  <g id="i-back"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></g>
+  <g id="i-x"><path d="M18 6 6 18M6 6l12 12"/></g>
+  <g id="i-check"><path d="M20 6 9 17l-5-5"/></g>
+  <g id="i-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></g>
+</defs></svg>
+
+<div class="pg"><div class="wrap">
+
+  <header class="phead">
+    <div class="kick">Direction 02 · reworked</div>
+    <h1 style="font-size:29px;margin-top:7px;">Kenya coverage map — zoom to county</h1>
+    <p class="plede">The real national outline, projected from actual longitude/latitude. All 47 counties are
+      plotted at their true centroids. <b>Click any county</b> and the map flies into it, revealing that county's
+      areas at their real positions — so Nairobi stops being a 6-pixel target. Try Nairobi, Kiambu or Machakos.</p>
+  </header>
+
+  <div class="app">
+    <div class="appbar">
+      <svg class="ic" viewBox="0 0 24 24" style="color:var(--primary)"><use href="#i-pin"/></svg>
+      <span class="crumb">Lead Operations · <b>Acquisition Pipeline</b></span>
+      <div class="seg" role="group" aria-label="Source type">
+        <button aria-pressed="true">Apartments</button>
+        <button aria-pressed="false">Agencies</button>
+        <button aria-pressed="false">Developers</button>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="mapcol">
+        <div class="maptop">
+          <div>
+            <div class="t">Kenya · scraper coverage</div>
+            <div class="sub" id="mapsub">47 counties · 3 with recent runs</div>
+          </div>
+          <div class="legend">
+            <span><i class="lg-f"></i>Fresh</span><span><i class="lg-s"></i>Stale</span><span><i class="lg-n"></i>No recent runs</span>
+          </div>
+        </div>
+        <div class="stage">
+          <svg id="map" viewBox="0 0 790 950" role="application" aria-label="Map of Kenya. Select a county to zoom in and choose areas."></svg>
+          <button class="backbtn" id="back"><svg class="ic sm" viewBox="0 0 24 24"><use href="#i-back"/></svg>Kenya</button>
+          <div class="zoomtitle" id="ztitle"><div class="n"></div><div class="m"></div></div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="sect" id="sidelbl">Areas</div>
+        <div id="sidebody"></div>
+
+        <div class="tray">
+          <div class="sect">Selected</div>
+          <div class="chips" id="chips"></div>
+          <div class="capbar"><span id="capt" class="tnum">0 / 2 areas</span><span class="slots" id="slots"></span></div>
+          <div class="budget" id="budget"></div>
+          <button class="run" id="run" disabled>
+            <svg class="ic" viewBox="0 0 24 24"><use href="#i-play"/></svg><span id="runlbl">Select an area</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <div class="kick">Motion choreography</div>
+    <h2 style="font-size:17px;margin-top:5px;">What happens when you pick a county</h2>
+    <div class="steps">
+      <div class="step"><div class="ph">00 · load</div><div class="h">Outline draws in</div>
+        <div class="d">The border traces itself, then county markers pop in staggered from south to north.</div>
+        <div class="tm">1100ms draw · 14ms stagger</div></div>
+      <div class="step"><div class="ph">01 · select</div><div class="h">Ripple fires</div>
+        <div class="d">A ring expands from the chosen county, and the other 46 markers fade back.</div>
+        <div class="tm">600ms ripple · 260ms fade</div></div>
+      <div class="step"><div class="ph">02 · fly</div><div class="h">The viewBox flies</div>
+        <div class="d">Camera eases into the county's real bounds — a true map zoom, not a scale transform, so
+          nothing blurs and stroke weights stay crisp.</div>
+        <div class="tm">900ms · easeInOutCubic</div></div>
+      <div class="step"><div class="ph">03 · reveal</div><div class="h">Areas drop in</div>
+        <div class="d">At 55% of the flight, area pins rise and fade in one by one; the side panel list follows.</div>
+        <div class="tm">from 500ms · 55ms stagger</div></div>
+    </div>
+    <div class="note"><span>⚠</span><span><b>Accessibility &amp; honesty.</b> Every marker is a focusable button
+      with a spoken label, and the side panel is a full keyboard equivalent of the map. With
+      <code>prefers-reduced-motion</code> the flight becomes an instant cut — no ripple, no pulse. Counties with no
+      recent runs stay neutral grey, never red.</span></div>
+  </section>
+
+  <div class="foot">Outline projected from longitude/latitude (33.8–42.0°E, 5.1°N–4.8°S) at 95px per degree.
+    County centroids and Nairobi-metro area coordinates are real; the national border is a simplified 30-point
+    trace — production should bundle reviewed, simplified GeoJSON. Estimates use ~253s per apartments location
+    against the 720s subprocess ceiling.</div>
+
+</div></div>
+
+<script>
+(function () {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("map");
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- projection ---------- */
+  var LON0 = 33.8, LAT0 = 5.1, S = 95;
+  function px(lon) { return (lon - LON0) * S; }
+  function py(lat) { return (LAT0 - lat) * S; }
+  var FULL = [0, 0, 790, 950];
+
+  /* ---------- Kenya border (simplified trace, lon/lat) ---------- */
+  var BORDER = [
+    [34.55,4.20],[35.30,5.00],[35.95,4.62],[36.90,4.40],[38.10,3.62],[39.50,3.48],
+    [41.00,3.95],[41.90,3.98],[41.00,2.00],[40.98,0.30],[41.55,-1.65],[40.90,-2.30],
+    [40.15,-3.20],[39.70,-4.05],[39.22,-4.68],[37.80,-3.68],[37.35,-3.05],[35.90,-1.90],
+    [34.05,-1.05],[33.90,-0.35],[34.40,-0.05],[34.10,0.35],[34.45,0.90],[34.20,1.20],
+    [34.80,1.90],[34.60,2.80]
+  ];
+
+  /* ---------- 47 counties (real approximate centroids) ---------- */
+  var COUNTIES = [
+    ["Mombasa",39.66,-4.05],["Kwale",39.17,-4.18],["Kilifi",39.85,-3.51],["Tana River",39.65,-1.50],
+    ["Lamu",40.90,-2.27],["Taita-Taveta",38.36,-3.40],["Garissa",39.90,-0.45],["Wajir",40.06,1.75],
+    ["Mandera",40.95,3.55],["Marsabit",37.99,2.33],["Isiolo",38.50,0.85],["Meru",37.75,0.05],
+    ["Tharaka-Nithi",37.90,-0.30],["Embu",37.60,-0.55],["Kitui",38.30,-1.40],["Machakos",37.27,-1.52],
+    ["Makueni",37.65,-2.15],["Nyandarua",36.50,-0.35],["Nyeri",36.95,-0.42],["Kirinyaga",37.30,-0.55],
+    ["Murang'a",37.05,-0.85],["Kiambu",36.83,-1.02],["Turkana",35.20,3.30],["West Pokot",35.20,1.75],
+    ["Samburu",37.10,1.30],["Trans Nzoia",34.98,1.02],["Uasin Gishu",35.30,0.52],["Elgeyo-Marakwet",35.50,0.80],
+    ["Nandi",35.10,0.18],["Baringo",35.95,0.75],["Laikipia",36.75,0.30],["Nakuru",36.07,-0.35],
+    ["Narok",35.85,-1.30],["Kajiado",36.80,-2.10],["Kericho",35.30,-0.40],["Bomet",35.35,-0.78],
+    ["Kakamega",34.75,0.28],["Vihiga",34.72,0.05],["Bungoma",34.56,0.57],["Busia",34.11,0.46],
+    ["Siaya",34.29,0.06],["Kisumu",34.77,-0.09],["Homa Bay",34.46,-0.53],["Migori",34.47,-1.06],
+    ["Kisii",34.78,-0.68],["Nyamira",34.94,-0.57],["Nairobi",36.82,-1.29]
+  ].map(function (c) { return { n: c[0], lon: c[1], lat: c[2] }; });
+
+  /* ---------- areas (real coordinates) ---------- */
+  var AREAS = {
+    "Nairobi": [
+      { n:"Westlands", lon:36.807, lat:-1.268, s:"f", age:"2d" },
+      { n:"Parklands", lon:36.858, lat:-1.262, s:"f", age:"2d" },
+      { n:"Lavington", lon:36.768, lat:-1.279, s:"f", age:"4d" },
+      { n:"Kilimani",  lon:36.784, lat:-1.292, s:"n", age:"" },
+      { n:"Upper Hill",lon:36.815, lat:-1.299, s:"n", age:"" },
+      { n:"Karen",     lon:36.706, lat:-1.319, s:"n", age:"" },
+      { n:"Embakasi",  lon:36.894, lat:-1.322, s:"n", age:"" }
+    ],
+    "Kiambu": [
+      { n:"Kiambu", lon:36.835, lat:-1.171, s:"f", age:"3d" },
+      { n:"Runda",  lon:36.812, lat:-1.221, s:"s", age:"26d" },
+      { n:"Ruiru",  lon:36.961, lat:-1.146, s:"f", age:"5d" },
+      { n:"Thika",  lon:37.069, lat:-1.039, s:"s", age:"21d" }
+    ],
+    "Machakos": [ { n:"Athi River", lon:36.978, lat:-1.456, s:"n", age:"" } ]
+  };
+
+  // county coverage derived from its areas
+  function countyState(n) {
+    var a = AREAS[n];
+    if (!a) return "n";
+    if (a.some(function (x) { return x.s === "f"; })) return "f";
+    if (a.some(function (x) { return x.s === "s"; })) return "s";
+    return "n";
+  }
+
+  var CAP = 2, PER = 253, LIMIT = 720;
+  var sel = [], zoom = null, vb = FULL.slice(), raf = null;
+
+  function fmt(s) { var m = Math.floor(s/60); return m + "m " + String(s%60).padStart(2,"0") + "s"; }
+  function tone(s) { return s === "f" ? ["var(--fresh-bg)","var(--fresh-bd)","var(--fresh-ink)"]
+                        : s === "s" ? ["var(--stale-bg)","var(--stale-bd)","var(--stale-ink)"]
+                        : ["var(--none-bg)","var(--none-bd)","var(--none-ink)"]; }
+  function lbl(a) { return a.s === "f" ? "Fresh · " + a.age : a.s === "s" ? "Stale · " + a.age : "None"; }
+
+  /* ---------- build static layers ---------- */
+  var gBorder = document.createElementNS(NS, "g");
+  var gCounty = document.createElementNS(NS, "g");
+  var gArea   = document.createElementNS(NS, "g");
+  var gFx     = document.createElementNS(NS, "g");
+
+  var defs = document.createElementNS(NS, "defs");
+  defs.innerHTML =
+    '<linearGradient id="land" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%" stop-color="oklch(0.985 0.006 170)"/>'
+    + '<stop offset="100%" stop-color="oklch(0.965 0.010 170)"/></linearGradient>'
+    + '<filter id="soft" x="-30%" y="-30%" width="160%" height="160%">'
+    + '<feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="oklch(0.45 0.13 165)" flood-opacity="0.13"/></filter>';
+  svg.appendChild(defs);
+  svg.appendChild(gBorder); svg.appendChild(gFx); svg.appendChild(gCounty); svg.appendChild(gArea);
+
+  var d = "M " + BORDER.map(function (p) { return px(p[0]).toFixed(1) + "," + py(p[1]).toFixed(1); }).join(" L ") + " Z";
+  var land = document.createElementNS(NS, "path");
+  land.setAttribute("d", d);
+  land.setAttribute("fill", "url(#land)");
+  land.setAttribute("stroke", "color-mix(in oklab, var(--primary) 34%, white)");
+  land.setAttribute("stroke-width", "2");
+  land.setAttribute("stroke-linejoin", "round");
+  land.setAttribute("vector-effect", "non-scaling-stroke");
+  land.setAttribute("filter", "url(#soft)");
+  gBorder.appendChild(land);
+
+  // draw-in
+  if (!reduced) {
+    var len = land.getTotalLength();
+    land.style.strokeDasharray = len;
+    land.style.strokeDashoffset = len;
+    land.style.transition = "stroke-dashoffset 1100ms cubic-bezier(.4,0,.2,1)";
+    requestAnimationFrame(function () { requestAnimationFrame(function () { land.style.strokeDashoffset = "0"; }); });
+  }
+
+  /* ---------- county markers ---------- */
+  var cNodes = [];
+  COUNTIES.slice().sort(function (a, b) { return b.lat - a.lat; }).forEach(function (c, i) {
+    var st = countyState(c.n), t = tone(st), has = !!AREAS[c.n];
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "county");
+    g.setAttribute("tabindex", "0");
+    g.setAttribute("role", "button");
+    g.setAttribute("aria-label", c.n + " county, " + (st === "f" ? "recently scraped" : st === "s" ? "stale coverage" : "no recent runs"));
+
+    var ring = document.createElementNS(NS, "circle");
+    ring.setAttribute("class", "ring");
+    ring.setAttribute("cx", px(c.lon)); ring.setAttribute("cy", py(c.lat));
+    ring.setAttribute("fill", "none"); ring.setAttribute("stroke", "var(--primary)");
+    ring.setAttribute("stroke-width", "2"); ring.setAttribute("opacity", "0");
+    ring.setAttribute("vector-effect", "non-scaling-stroke");
+    g.appendChild(ring);
+
+    var dot = document.createElementNS(NS, "circle");
+    dot.setAttribute("cx", px(c.lon)); dot.setAttribute("cy", py(c.lat));
+    dot.setAttribute("fill", t[0]); dot.setAttribute("stroke", t[1]);
+    dot.setAttribute("stroke-width", "1.6");
+    dot.setAttribute("vector-effect", "non-scaling-stroke");
+    g.appendChild(dot);
+
+    var tx = document.createElementNS(NS, "text");
+    tx.setAttribute("x", px(c.lon)); tx.setAttribute("y", py(c.lat) - 13);
+    tx.setAttribute("text-anchor", "middle"); tx.setAttribute("font-family", "Inter, sans-serif");
+    tx.setAttribute("font-weight", "700"); tx.setAttribute("fill", t[2]);
+    tx.setAttribute("opacity", has ? "1" : "0"); tx.style.pointerEvents = "none";
+    tx.textContent = c.n;
+    g.appendChild(tx);
+
+    g.addEventListener("click", function () { enter(c); });
+    g.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); enter(c); }
+    });
+    g.addEventListener("mouseenter", function () { if (!zoom) { ring.setAttribute("opacity", ".55"); tx.setAttribute("opacity", "1"); } });
+    g.addEventListener("mouseleave", function () { if (!zoom) { ring.setAttribute("opacity", "0"); tx.setAttribute("opacity", has ? "1" : "0"); } });
+
+    gCounty.appendChild(g);
+    cNodes.push({ c: c, g: g, dot: dot, ring: ring, tx: tx, has: has, base: has ? 9 : 5.5 });
+
+    if (!reduced) {
+      g.style.opacity = "0";
+      g.style.transition = "opacity .34s ease " + (i * 14) + "ms";
+      requestAnimationFrame(function () { requestAnimationFrame(function () { g.style.opacity = "1"; }); });
+    }
+  });
+
+  /* ---------- viewBox flight ---------- */
+  function setVB(v) { vb = v; svg.setAttribute("viewBox", v.join(" ")); rescale(); }
+  function fly(target, dur, done) {
+    if (raf) cancelAnimationFrame(raf);
+    if (reduced) { setVB(target); if (done) done(); return; }
+    var from = vb.slice(), t0 = performance.now();
+    (function step(now) {
+      var p = Math.min(1, (now - t0) / dur);
+      var e = p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3) / 2;
+      setVB(from.map(function (s, i) { return s + (target[i] - s) * e; }));
+      if (p < 1) raf = requestAnimationFrame(step); else if (done) done();
+    })(t0);
+  }
+
+  // keep marker sizes visually constant while the camera flies
+  function rescale() {
+    var k = vb[2] / FULL[2];
+    cNodes.forEach(function (o) {
+      o.dot.setAttribute("r", (o.base * k).toFixed(2));
+      o.ring.setAttribute("r", (o.base * k + 6 * k).toFixed(2));
+      o.tx.setAttribute("font-size", (11 * k).toFixed(2));
+      o.tx.setAttribute("y", (py(o.c.lat) - 13 * k).toFixed(2));
+    });
+    [].forEach.call(gArea.querySelectorAll("[data-r]"), function (el) {
+      el.setAttribute("r", (parseFloat(el.dataset.r) * k).toFixed(2));
+    });
+    [].forEach.call(gArea.querySelectorAll("text"), function (el) {
+      el.setAttribute("font-size", (11 * k).toFixed(2));
+      el.setAttribute("y", (parseFloat(el.dataset.y) - 14 * k).toFixed(2));
+    });
+  }
+
+  /* ---------- enter / exit a county ---------- */
+  function bounds(name, c) {
+    var list = AREAS[name];
+    if (!list || !list.length) {
+      var w = 150, h = w * (FULL[3] / FULL[2]);
+      return [px(c.lon) - w/2, py(c.lat) - h/2, w, h];
+    }
+    var xs = list.map(function (a) { return px(a.lon); }), ys = list.map(function (a) { return py(a.lat); });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    var ar = FULL[3] / FULL[2];
+    var w = Math.max((x1 - x0) * 1.9, ((y1 - y0) * 1.9) / ar, 46);
+    return [cx - w/2, cy - (w * ar)/2, w, w * ar];
+  }
+
+  function ripple(c) {
+    if (reduced) return;
+    var r = document.createElementNS(NS, "circle");
+    r.setAttribute("cx", px(c.lon)); r.setAttribute("cy", py(c.lat));
+    r.setAttribute("fill", "none"); r.setAttribute("stroke", "var(--primary)");
+    r.setAttribute("stroke-width", "2.5"); r.setAttribute("vector-effect", "non-scaling-stroke");
+    r.innerHTML = '<animate attributeName="r" from="6" to="60" dur="600ms" fill="freeze"/>'
+                + '<animate attributeName="opacity" from="0.7" to="0" dur="600ms" fill="freeze"/>';
+    gFx.appendChild(r);
+    setTimeout(function () { r.remove(); }, 650);
+  }
+
+  function enter(c) {
+    if (zoom === c.n) return;
+    zoom = c.n;
+    ripple(c);
+    cNodes.forEach(function (o) {
+      var me = o.c.n === c.n;
+      o.g.style.transition = "opacity .26s ease";
+      o.g.style.opacity = me ? "1" : "0";
+      o.g.style.pointerEvents = me ? "auto" : "none";
+      if (me) o.ring.setAttribute("opacity", ".8");
+    });
+    fly(bounds(c.n, c), 900);
+    setTimeout(function () { drawAreas(c.n); }, reduced ? 0 : 500);
+
+    document.getElementById("back").classList.add("show");
+    var zt = document.getElementById("ztitle");
+    zt.classList.add("show");
+    var n = AREAS[c.n] ? AREAS[c.n].length : 0;
+    zt.querySelector(".n").textContent = c.n;
+    zt.querySelector(".m").textContent = n ? n + " areas in this county" : "No areas in the dataset yet";
+    renderSide(c.n);
+  }
+
+  function exit() {
+    zoom = null;
+    gArea.innerHTML = "";
+    cNodes.forEach(function (o) {
+      o.g.style.opacity = "1"; o.g.style.pointerEvents = "auto";
+      o.ring.setAttribute("opacity", "0");
+    });
+    fly(FULL.slice(), 750);
+    document.getElementById("back").classList.remove("show");
+    document.getElementById("ztitle").classList.remove("show");
+    renderSide(null);
+  }
+  document.getElementById("back").addEventListener("click", exit);
+
+  /* ---------- area pins ---------- */
+  function drawAreas(name) {
+    gArea.innerHTML = "";
+    var list = AREAS[name];
+    if (!list) return;
+    list.forEach(function (a, i) {
+      var on = sel.indexOf(a.n) >= 0, t = tone(a.s);
+      var g = document.createElementNS(NS, "g");
+      g.setAttribute("class", "area");
+      g.setAttribute("tabindex", "0");
+      g.setAttribute("role", "button");
+      g.setAttribute("aria-pressed", String(on));
+      g.setAttribute("aria-label", a.n + ", " + lbl(a));
+
+      var ring = document.createElementNS(NS, "circle");
+      ring.setAttribute("class", "aring");
+      ring.setAttribute("cx", px(a.lon)); ring.setAttribute("cy", py(a.lat));
+      ring.dataset.r = 15;
+      ring.setAttribute("fill", "none"); ring.setAttribute("stroke", "var(--primary)");
+      ring.setAttribute("stroke-width", "2.5"); ring.setAttribute("opacity", on ? "1" : "0");
+      ring.setAttribute("vector-effect", "non-scaling-stroke");
+      g.appendChild(ring);
+
+      var dot = document.createElementNS(NS, "circle");
+      dot.setAttribute("cx", px(a.lon)); dot.setAttribute("cy", py(a.lat));
+      dot.dataset.r = 10;
+      dot.setAttribute("fill", on ? "var(--accent)" : t[0]);
+      dot.setAttribute("stroke", on ? "var(--primary)" : t[1]);
+      dot.setAttribute("stroke-width", on ? "2.5" : "1.6");
+      dot.setAttribute("vector-effect", "non-scaling-stroke");
+      g.appendChild(dot);
+
+      var tx = document.createElementNS(NS, "text");
+      tx.setAttribute("x", px(a.lon)); tx.dataset.y = py(a.lat);
+      tx.setAttribute("y", py(a.lat) - 14);
+      tx.setAttribute("text-anchor", "middle"); tx.setAttribute("font-family", "Inter, sans-serif");
+      tx.setAttribute("font-weight", "700"); tx.setAttribute("fill", on ? "var(--accent-foreground)" : t[2]);
+      tx.style.pointerEvents = "none";
+      tx.textContent = a.n;
+      g.appendChild(tx);
+
+      g.addEventListener("click", function () { toggle(a.n); });
+      g.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(a.n); }
+      });
+
+      gArea.appendChild(g);
+      if (!reduced) {
+        g.style.opacity = "0";
+        g.style.transform = "translateY(6px)";
+        g.style.transition = "opacity .3s ease " + (i * 55) + "ms, transform .3s cubic-bezier(.34,1.4,.64,1) " + (i * 55) + "ms";
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+          g.style.opacity = "1"; g.style.transform = "none"; }); });
+      }
+    });
+    rescale();
+  }
+
+  /* ---------- selection ---------- */
+  function toggle(n) {
+    var i = sel.indexOf(n);
+    if (i >= 0) sel.splice(i, 1);
+    else { if (sel.length >= CAP) return; sel.push(n); }
+    if (zoom) drawAreas(zoom);
+    renderSide(zoom); renderTray();
+  }
+
+  function renderSide(name) {
+    var lblEl = document.getElementById("sidelbl"), host = document.getElementById("sidebody");
+    if (!name) {
+      lblEl.textContent = "Areas";
+      host.innerHTML = '<div class="hint">Pick a county on the map to see its areas.<br>'
+        + '<span style="color:var(--primary);font-weight:600">Nairobi · Kiambu · Machakos</span> have data.</div>';
+      return;
+    }
+    lblEl.textContent = name + " · areas";
+    var list = AREAS[name];
+    if (!list) { host.innerHTML = '<div class="hint">No areas bundled for this county yet.</div>'; return; }
+    host.innerHTML = '<div class="arealist">' + list.map(function (a) {
+      var on = sel.indexOf(a.n) >= 0, dim = !on && sel.length >= CAP;
+      return '<button class="arow' + (on ? " on" : "") + (dim ? " dim" : "") + '" data-n="' + a.n + '"'
+        + (dim ? ' aria-disabled="true"' : '') + ' aria-pressed="' + on + '">'
+        + '<span class="bx">' + (on ? '<svg class="ic sm" viewBox="0 0 24 24" style="width:10px;height:10px"><use href="#i-check"/></svg>' : '') + '</span>'
+        + '<span class="nm">' + a.n + '</span><span class="st s-' + a.s + '">' + lbl(a) + '</span></button>';
+    }).join("") + '</div>';
+    host.querySelectorAll(".arow").forEach(function (b) {
+      b.addEventListener("click", function () { toggle(b.dataset.n); });
+    });
+  }
+
+  function renderTray() {
+    var chips = document.getElementById("chips");
+    chips.innerHTML = sel.length
+      ? sel.map(function (n) { return '<span class="chip">' + n
+          + '<button data-n="' + n + '" aria-label="Remove ' + n + '">'
+          + '<svg class="ic sm" viewBox="0 0 24 24" style="width:10px;height:10px"><use href="#i-x"/></svg></button></span>'; }).join("")
+      : '<span style="font-size:11.5px;color:var(--muted-foreground)">Nothing selected</span>';
+    chips.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function () { toggle(b.dataset.n); });
+    });
+
+    var s = "";
+    for (var i = 0; i < CAP; i++) s += '<i class="' + (i < sel.length ? (sel.length === CAP ? "full" : "on") : "") + '"></i>';
+    document.getElementById("slots").innerHTML = s;
+    document.getElementById("capt").textContent = sel.length + " / " + CAP + " areas";
+
+    var bud = document.getElementById("budget"), run = document.getElementById("run"), rl = document.getElementById("runlbl");
+    if (!sel.length) { bud.innerHTML = ""; run.disabled = true; rl.textContent = "Select an area"; return; }
+    run.disabled = false;
+    rl.textContent = "Run Scraper · " + sel.length + " area" + (sel.length > 1 ? "s" : "");
+    var total = sel.length * PER, ratio = total / LIMIT;
+    var col = ratio > .92 ? "var(--destructive)" : ratio > .7 ? "var(--warning)" : "var(--primary)";
+    bud.innerHTML = '<div class="brow"><span>Est. runtime · sequential</span><b class="tnum">' + fmt(total) + '</b></div>'
+      + '<div class="track"><span class="fill" style="width:' + Math.min(100, ratio * 100) + '%;background:' + col + '"></span></div>';
+  }
+
+  document.querySelectorAll(".seg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".seg button").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+    });
+  });
+
+  setVB(FULL.slice());
+  renderSide(null); renderTray();
+})();
+</script>

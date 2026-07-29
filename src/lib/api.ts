@@ -478,6 +478,29 @@ export const reportsApi = {
 export type ScraperType = "apartments" | "agencies" | "developers";
 export type ScraperRunStatus = "running" | "success" | "failed";
 
+export type ScraperLocation = {
+  id: string;
+  name: string;
+  county: string;
+  qualified_term: string;
+  tier: "premium" | "high_density" | "unvetted";
+};
+
+export type ScraperSourceOption = {
+  id: ScraperType;
+  label: string;
+  requires_area: boolean;
+  max_areas: number;
+  search_terms: string[];
+};
+
+export type ScraperOptions = {
+  recent_run_days: number;
+  history_window: number;
+  sources: ScraperSourceOption[];
+  locations: ScraperLocation[];
+};
+
 export type ScraperRun = {
   id: number;
   scraper_type: ScraperType;
@@ -517,7 +540,7 @@ export type ScraperRunRecords = {
 };
 
 export const scraperApi = {
-
+  options: () => request<ScraperOptions>("/api/scraper/options"),
   run: (scraper_type: ScraperType, areas: string[]) =>
     request<{ success: boolean; run_id: number }>("/api/scraper/run", {
       method: "POST",
