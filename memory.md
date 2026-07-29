@@ -43,6 +43,7 @@
 ## 2026-07-29 - Application shell UX direction
 
 - The approved shell change is documented in `docs/superpowers/specs/2026-07-29-navbar-sticky-sidebar-design.md` on branch `navbar-sticky-sidebar`.
+- The executable handoff is `docs/superpowers/plans/2026-07-29-navbar-sticky-sidebar.md`; it keeps desktop and mobile navigation on one route list, uses the existing lead detail panel for global-search results, and defines the PR proof matrix.
 - The top bar should use the full main-column width, allow global search to flex, and retain only functional account controls. The unused notification bell and broad global refresh action are intentionally removed rather than made to imply unsupported product capabilities.
 - Desktop navigation should remain viewport-sticky with safe internal overflow. Narrow layouts must preserve the existing mobile navigation model and prevent the sidebar from consuming page width.
 - Browser closure requires desktop and narrow-viewport proof across Dashboard, Data Scraper, Apartments, and at least one other route, with committed screenshots under `docs/assets/pr-navbar-sticky-sidebar/`.
