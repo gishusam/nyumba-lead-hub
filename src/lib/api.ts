@@ -56,7 +56,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
+export async function apiRequest<T>(
   path: string,
   init: RequestInit & { auth?: boolean } = {},
 ): Promise<T> {
@@ -103,6 +103,8 @@ async function request<T>(
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+const request = apiRequest;
 
 // ============= Auth =============
 export async function login(email: string, password: string) {
