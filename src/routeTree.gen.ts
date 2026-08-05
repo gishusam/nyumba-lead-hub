@@ -16,12 +16,14 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppAgenciesRouteImport } from './routes/_app.agencies'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppApartmentsRouteImport } from './routes/_app.apartments'
+import { Route as AppCommunicationsRouteImport } from './routes/_app.communications'
 import { Route as AppDevelopersRouteImport } from './routes/_app.developers'
 import { Route as AppLandlordsRouteImport } from './routes/_app.landlords'
 import { Route as AppLeadsRouteImport } from './routes/_app.leads'
 import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppScrapeRouteImport } from './routes/_app.scrape'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppCommunicationsIndexRouteImport } from './routes/_app.communications.index'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -57,6 +59,11 @@ const AppApartmentsRoute = AppApartmentsRouteImport.update({
   path: '/apartments',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCommunicationsRoute = AppCommunicationsRouteImport.update({
+  id: '/communications',
+  path: '/communications',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDevelopersRoute = AppDevelopersRouteImport.update({
   id: '/developers',
   path: '/developers',
@@ -87,6 +94,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCommunicationsIndexRoute = AppCommunicationsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppCommunicationsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -95,12 +107,14 @@ export interface FileRoutesByFullPath {
   '/agencies': typeof AppAgenciesRoute
   '/analytics': typeof AppAnalyticsRoute
   '/apartments': typeof AppApartmentsRoute
+  '/communications': typeof AppCommunicationsRouteWithChildren
   '/developers': typeof AppDevelopersRoute
   '/landlords': typeof AppLandlordsRoute
   '/leads': typeof AppLeadsRoute
   '/reports': typeof AppReportsRoute
   '/scrape': typeof AppScrapeRoute
   '/settings': typeof AppSettingsRoute
+  '/communications/': typeof AppCommunicationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
@@ -115,6 +129,7 @@ export interface FileRoutesByTo {
   '/scrape': typeof AppScrapeRoute
   '/settings': typeof AppSettingsRoute
   '/': typeof AppIndexRoute
+  '/communications': typeof AppCommunicationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,6 +139,7 @@ export interface FileRoutesById {
   '/_app/agencies': typeof AppAgenciesRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/apartments': typeof AppApartmentsRoute
+  '/_app/communications': typeof AppCommunicationsRouteWithChildren
   '/_app/developers': typeof AppDevelopersRoute
   '/_app/landlords': typeof AppLandlordsRoute
   '/_app/leads': typeof AppLeadsRoute
@@ -131,6 +147,7 @@ export interface FileRoutesById {
   '/_app/scrape': typeof AppScrapeRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/communications/': typeof AppCommunicationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,12 +158,14 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/analytics'
     | '/apartments'
+    | '/communications'
     | '/developers'
     | '/landlords'
     | '/leads'
     | '/reports'
     | '/scrape'
     | '/settings'
+    | '/communications/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/change-password'
@@ -161,6 +180,7 @@ export interface FileRouteTypes {
     | '/scrape'
     | '/settings'
     | '/'
+    | '/communications'
   id:
     | '__root__'
     | '/_app'
@@ -169,6 +189,7 @@ export interface FileRouteTypes {
     | '/_app/agencies'
     | '/_app/analytics'
     | '/_app/apartments'
+    | '/_app/communications'
     | '/_app/developers'
     | '/_app/landlords'
     | '/_app/leads'
@@ -176,6 +197,7 @@ export interface FileRouteTypes {
     | '/_app/scrape'
     | '/_app/settings'
     | '/_app/'
+    | '/_app/communications/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -235,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppApartmentsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/communications': {
+      id: '/_app/communications'
+      path: '/communications'
+      fullPath: '/communications'
+      preLoaderRoute: typeof AppCommunicationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/developers': {
       id: '/_app/developers'
       path: '/developers'
@@ -277,13 +306,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/communications/': {
+      id: '/_app/communications/'
+      path: '/'
+      fullPath: '/communications/'
+      preLoaderRoute: typeof AppCommunicationsIndexRouteImport
+      parentRoute: typeof AppCommunicationsRoute
+    }
   }
 }
+
+interface AppCommunicationsRouteChildren {
+  AppCommunicationsIndexRoute: typeof AppCommunicationsIndexRoute
+}
+
+const AppCommunicationsRouteChildren: AppCommunicationsRouteChildren = {
+  AppCommunicationsIndexRoute: AppCommunicationsIndexRoute,
+}
+
+const AppCommunicationsRouteWithChildren =
+  AppCommunicationsRoute._addFileChildren(AppCommunicationsRouteChildren)
 
 interface AppRouteChildren {
   AppAgenciesRoute: typeof AppAgenciesRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppApartmentsRoute: typeof AppApartmentsRoute
+  AppCommunicationsRoute: typeof AppCommunicationsRouteWithChildren
   AppDevelopersRoute: typeof AppDevelopersRoute
   AppLandlordsRoute: typeof AppLandlordsRoute
   AppLeadsRoute: typeof AppLeadsRoute
@@ -297,6 +345,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAgenciesRoute: AppAgenciesRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppApartmentsRoute: AppApartmentsRoute,
+  AppCommunicationsRoute: AppCommunicationsRouteWithChildren,
   AppDevelopersRoute: AppDevelopersRoute,
   AppLandlordsRoute: AppLandlordsRoute,
   AppLeadsRoute: AppLeadsRoute,
