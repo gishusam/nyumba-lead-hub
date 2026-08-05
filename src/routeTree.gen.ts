@@ -24,6 +24,8 @@ import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppScrapeRouteImport } from './routes/_app.scrape'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppCommunicationsIndexRouteImport } from './routes/_app.communications.index'
+import { Route as AppCommunicationsBulkMailRouteImport } from './routes/_app.communications.bulk-mail'
+import { Route as AppCommunicationsNewsletterRouteImport } from './routes/_app.communications.newsletter'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -99,6 +101,18 @@ const AppCommunicationsIndexRoute = AppCommunicationsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppCommunicationsRoute,
 } as any)
+const AppCommunicationsBulkMailRoute =
+  AppCommunicationsBulkMailRouteImport.update({
+    id: '/bulk-mail',
+    path: '/bulk-mail',
+    getParentRoute: () => AppCommunicationsRoute,
+  } as any)
+const AppCommunicationsNewsletterRoute =
+  AppCommunicationsNewsletterRouteImport.update({
+    id: '/newsletter',
+    path: '/newsletter',
+    getParentRoute: () => AppCommunicationsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -114,6 +128,8 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AppReportsRoute
   '/scrape': typeof AppScrapeRoute
   '/settings': typeof AppSettingsRoute
+  '/communications/bulk-mail': typeof AppCommunicationsBulkMailRoute
+  '/communications/newsletter': typeof AppCommunicationsNewsletterRoute
   '/communications/': typeof AppCommunicationsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -129,6 +145,8 @@ export interface FileRoutesByTo {
   '/scrape': typeof AppScrapeRoute
   '/settings': typeof AppSettingsRoute
   '/': typeof AppIndexRoute
+  '/communications/bulk-mail': typeof AppCommunicationsBulkMailRoute
+  '/communications/newsletter': typeof AppCommunicationsNewsletterRoute
   '/communications': typeof AppCommunicationsIndexRoute
 }
 export interface FileRoutesById {
@@ -147,6 +165,8 @@ export interface FileRoutesById {
   '/_app/scrape': typeof AppScrapeRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/communications/bulk-mail': typeof AppCommunicationsBulkMailRoute
+  '/_app/communications/newsletter': typeof AppCommunicationsNewsletterRoute
   '/_app/communications/': typeof AppCommunicationsIndexRoute
 }
 export interface FileRouteTypes {
@@ -165,6 +185,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/scrape'
     | '/settings'
+    | '/communications/bulk-mail'
+    | '/communications/newsletter'
     | '/communications/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -180,6 +202,8 @@ export interface FileRouteTypes {
     | '/scrape'
     | '/settings'
     | '/'
+    | '/communications/bulk-mail'
+    | '/communications/newsletter'
     | '/communications'
   id:
     | '__root__'
@@ -197,6 +221,8 @@ export interface FileRouteTypes {
     | '/_app/scrape'
     | '/_app/settings'
     | '/_app/'
+    | '/_app/communications/bulk-mail'
+    | '/_app/communications/newsletter'
     | '/_app/communications/'
   fileRoutesById: FileRoutesById
 }
@@ -313,14 +339,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCommunicationsIndexRouteImport
       parentRoute: typeof AppCommunicationsRoute
     }
+    '/_app/communications/bulk-mail': {
+      id: '/_app/communications/bulk-mail'
+      path: '/bulk-mail'
+      fullPath: '/communications/bulk-mail'
+      preLoaderRoute: typeof AppCommunicationsBulkMailRouteImport
+      parentRoute: typeof AppCommunicationsRoute
+    }
+    '/_app/communications/newsletter': {
+      id: '/_app/communications/newsletter'
+      path: '/newsletter'
+      fullPath: '/communications/newsletter'
+      preLoaderRoute: typeof AppCommunicationsNewsletterRouteImport
+      parentRoute: typeof AppCommunicationsRoute
+    }
   }
 }
 
 interface AppCommunicationsRouteChildren {
+  AppCommunicationsBulkMailRoute: typeof AppCommunicationsBulkMailRoute
+  AppCommunicationsNewsletterRoute: typeof AppCommunicationsNewsletterRoute
   AppCommunicationsIndexRoute: typeof AppCommunicationsIndexRoute
 }
 
 const AppCommunicationsRouteChildren: AppCommunicationsRouteChildren = {
+  AppCommunicationsBulkMailRoute: AppCommunicationsBulkMailRoute,
+  AppCommunicationsNewsletterRoute: AppCommunicationsNewsletterRoute,
   AppCommunicationsIndexRoute: AppCommunicationsIndexRoute,
 }
 

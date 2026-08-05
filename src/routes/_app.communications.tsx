@@ -5,13 +5,10 @@ import { CommunicationsShell } from "@/features/communications/CommunicationsShe
 export const Route = createFileRoute("/_app/communications")({
   head: () => ({
     meta: [
-      {
-        title: "Communications — Nyumba Zetu Lead Intelligence",
-      },
+      { title: "Communications — Nyumba Zetu Lead Intelligence" },
       {
         name: "description",
-        content:
-          "Manage outreach, follow-ups, newsletters, and delivery health.",
+        content: "Send personalised bulk mail, create newsletters, and track delivery performance.",
       },
     ],
   }),

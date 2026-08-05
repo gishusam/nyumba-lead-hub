@@ -1,5 +1,5 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { MessageSquareText } from "lucide-react";
+import { Mail, Sparkles } from "lucide-react";
 
 import { communicationsNavigation } from "./communications-navigation";
 
@@ -9,20 +9,21 @@ export function CommunicationsShell() {
       <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
-            <MessageSquareText className="h-3.5 w-3.5" />
-            Communications workspace
+            <Mail className="h-3.5 w-3.5" />
+            Email marketing
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Communications
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Communications</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Manage outreach, follow-ups, newsletters, and delivery health.
+            Send personalised bulk mail, create newsletters, and track delivery performance.
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          Slice 1 · Overview foundation
-        </div>
+        {import.meta.env.DEV ? (
+          <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Interactive design preview
+          </div>
+        ) : null}
       </header>
 
       <nav
@@ -30,31 +31,19 @@ export function CommunicationsShell() {
         className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
       >
         <div className="inline-flex min-w-max items-center gap-1 py-3">
-          {communicationsNavigation.map((item) =>
-            item.enabled ? (
-              <Link
-                key={item.to}
-                to="/communications"
-                activeOptions={{ exact: true }}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                activeProps={{
-                  className:
-                    "rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary",
-                }}
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <span
-                key={item.to}
-                aria-disabled="true"
-                title="Coming in a later implementation slice"
-                className="cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/55"
-              >
-                {item.label}
-              </span>
-            ),
-          )}
+          {communicationsNavigation.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.to === "/communications" }}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              activeProps={{
+                className: "rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary",
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       </nav>
 
