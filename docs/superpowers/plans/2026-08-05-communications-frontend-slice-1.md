@@ -9,6 +9,8 @@
 **Tech Stack:** Node.js 22, React 19, TypeScript 5.8, TanStack Start/Router, TanStack React Query, Tailwind CSS 4, Radix UI, Lucide React, Vitest.
 
 ## Global Constraints
+> **Test-runner compatibility:** The repository already contains `node:test` suites named `*.test.ts`. Slice 1 preserves those tests under Node's runner and reserves `*.vitest.ts` for new Vitest suites. `npm test` runs both runners sequentially.
+
 
 - Work only on `feature/communications-frontend`.
 - Base integration branch is `staging`; do not modify `main`.
@@ -30,7 +32,7 @@
 - Create: `.node-version`
 - Modify: `package.json`
 - Create/update: `package-lock.json`
-- Create: `src/lib/test-runtime.test.ts`
+- Create: `src/lib/test-runtime.vitest.ts`
 
 ### API boundary
 
@@ -70,7 +72,7 @@
 - Create: `.node-version`
 - Modify: `package.json`
 - Create/update: `package-lock.json`
-- Create: `src/lib/test-runtime.test.ts`
+- Create: `src/lib/test-runtime.vitest.ts`
 
 **Interfaces:**
 - Consumes: existing npm/Vite project.
@@ -100,7 +102,9 @@ Add to the `scripts` object in `package.json`:
 
 ```json
 "typecheck": "tsc --noEmit",
-"test": "vitest run",
+"test": "npm run test:node && npm run test:vitest",
+"test:node": "node --test src/lib/*.test.ts",
+"test:vitest": "vitest run",
 "test:watch": "vitest"
 ```
 
@@ -126,7 +130,7 @@ Expected: `vitest` appears in `devDependencies` and `package-lock.json` is gener
 
 - [ ] **Step 6: Add the minimal runtime smoke test**
 
-Create `src/lib/test-runtime.test.ts`:
+Create `src/lib/test-runtime.vitest.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -152,7 +156,7 @@ Expected: the smoke test passes and TypeScript exits 0.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add .node-version package.json package-lock.json src/lib/test-runtime.test.ts
+git add .node-version package.json package-lock.json src/lib/test-runtime.vitest.ts
 git commit -m "chore: establish communications frontend runtime"
 ```
 
