@@ -1,10 +1,8 @@
-import type {
-  AudienceFilter,
-  CampaignDraftState,
-} from "./types";
+import type { AudienceFilter, CampaignDraftState } from "./types";
 
 export function createCampaignDraft(): CampaignDraftState {
   return {
+    name: "",
     campaignType: null,
     audienceSource: "leads",
     filters: {},
@@ -34,6 +32,7 @@ export function buildRecipientFilter(
   state: CampaignDraftState,
 ): AudienceFilter {
   const { area, lead_type, status, ai_score } = state.filters;
+
   return Object.fromEntries(
     Object.entries({ area, lead_type, status, ai_score }).filter(
       ([, value]) => Boolean(value),
@@ -41,8 +40,12 @@ export function buildRecipientFilter(
   ) as AudienceFilter;
 }
 
+export function canContinueFromBasics(state: CampaignDraftState): boolean {
+  return Boolean(state.name.trim() && state.campaignType);
+}
+
 export function canContinueFromAudience(state: CampaignDraftState): boolean {
-  if (state.audienceSource !== "leads") return true;
+  if (state.audienceSource !== "leads") return false;
   return Object.keys(buildRecipientFilter(state)).length > 0;
 }
 

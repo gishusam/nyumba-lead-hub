@@ -8,16 +8,27 @@ export type AudienceFilter = {
   ai_score?: string;
 };
 
+export type ResolvedRecipient = {
+  id: string;
+  contact_name: string;
+  company_name: string;
+  email: string;
+  area: string;
+  lead_type: string;
+};
+
 export type AudienceReviewSummary = {
   matched: number;
+  missing_email: number;
   invalid: number;
-  unsubscribed: number;
   duplicates: number;
+  unsubscribed: number | null;
   ready: number;
   accepted: boolean;
 };
 
 export type CampaignDraftState = {
+  name: string;
   campaignType: CampaignType | null;
   audienceSource: AudienceSource;
   filters: AudienceFilter;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildRecipientFilter,
+  canContinueFromBasics,
   canContinueFromReview,
   createCampaignDraft,
   personalizePreview,
@@ -8,6 +9,19 @@ import {
 } from "./campaign-state";
 
 describe("communications campaign state", () => {
+  it("requires campaign name and type", () => {
+    const initial = createCampaignDraft();
+
+    expect(canContinueFromBasics(initial)).toBe(false);
+    expect(
+      canContinueFromBasics({
+        ...initial,
+        name: "Kilimani Agency Event",
+        campaignType: "newsletter",
+      }),
+    ).toBe(true);
+  });
+
   it("builds only supported audience filters", () => {
     let state = createCampaignDraft();
     state = setAudienceFilter(state, "area", "Kilimani");
@@ -19,15 +33,16 @@ describe("communications campaign state", () => {
     });
   });
 
-  it("blocks progress until the audience review is explicitly accepted", () => {
+  it("blocks progress until review is accepted", () => {
     const state = {
       ...createCampaignDraft(),
       review: {
         matched: 47,
+        missing_email: 1,
         invalid: 2,
-        unsubscribed: 3,
         duplicates: 1,
-        ready: 41,
+        unsubscribed: null,
+        ready: 43,
         accepted: false,
       },
     };
@@ -41,32 +56,35 @@ describe("communications campaign state", () => {
     ).toBe(true);
   });
 
-  it("invalidates an accepted review when an audience filter changes", () => {
+  it("invalidates review after filter change", () => {
     const reviewed = {
       ...createCampaignDraft(),
       filters: { area: "Kilimani" },
       review: {
         matched: 10,
+        missing_email: 0,
         invalid: 0,
-        unsubscribed: 0,
         duplicates: 0,
+        unsubscribed: null,
         ready: 10,
         accepted: true,
       },
     };
 
-    const changed = setAudienceFilter(reviewed, "lead_type", "agency");
-    expect(changed.review).toBeNull();
+    expect(
+      setAudienceFilter(reviewed, "lead_type", "agency").review,
+    ).toBeNull();
   });
 
-  it("does not accept a review with zero ready recipients", () => {
+  it("blocks review with zero ready recipients", () => {
     const state = {
       ...createCampaignDraft(),
       review: {
         matched: 3,
+        missing_email: 1,
         invalid: 1,
-        unsubscribed: 1,
         duplicates: 1,
+        unsubscribed: null,
         ready: 0,
         accepted: true,
       },
@@ -75,16 +93,16 @@ describe("communications campaign state", () => {
     expect(canContinueFromReview(state)).toBe(false);
   });
 
-  it("personalises supported campaign merge fields", () => {
+  it("personalises supported merge fields", () => {
     expect(
       personalizePreview(
-        "Hi {contact_name}, join our event in {area}. — {company_name}",
+        "Hi {contact_name}, join us in {area}. — {company_name}",
         {
           contact_name: "John",
           company_name: "ABC Properties",
           area: "Kilimani",
         },
       ),
-    ).toBe("Hi John, join our event in Kilimani. — ABC Properties");
+    ).toBe("Hi John, join us in Kilimani. — ABC Properties");
   });
 });
