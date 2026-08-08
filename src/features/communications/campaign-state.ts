@@ -1,0 +1,65 @@
+import type {
+  AudienceFilter,
+  CampaignDraftState,
+} from "./types";
+
+export function createCampaignDraft(): CampaignDraftState {
+  return {
+    campaignType: null,
+    audienceSource: "leads",
+    filters: {},
+    review: null,
+    senderName: "Nyumba Zetu",
+    senderEmail: "",
+    subject: "",
+    body: "",
+  };
+}
+
+export function setAudienceFilter(
+  state: CampaignDraftState,
+  key: keyof AudienceFilter,
+  value: string,
+): CampaignDraftState {
+  const next = value.trim();
+  const filters = { ...state.filters };
+
+  if (next) filters[key] = next;
+  else delete filters[key];
+
+  return { ...state, filters, review: null };
+}
+
+export function buildRecipientFilter(
+  state: CampaignDraftState,
+): AudienceFilter {
+  const { area, lead_type, status, ai_score } = state.filters;
+  return Object.fromEntries(
+    Object.entries({ area, lead_type, status, ai_score }).filter(
+      ([, value]) => Boolean(value),
+    ),
+  ) as AudienceFilter;
+}
+
+export function canContinueFromAudience(state: CampaignDraftState): boolean {
+  if (state.audienceSource !== "leads") return true;
+  return Object.keys(buildRecipientFilter(state)).length > 0;
+}
+
+export function canContinueFromReview(state: CampaignDraftState): boolean {
+  return Boolean(state.review?.accepted && state.review.ready > 0);
+}
+
+export function personalizePreview(
+  template: string,
+  recipient: {
+    contact_name: string;
+    company_name: string;
+    area: string;
+  },
+): string {
+  return template
+    .replaceAll("{contact_name}", recipient.contact_name)
+    .replaceAll("{company_name}", recipient.company_name)
+    .replaceAll("{area}", recipient.area);
+}
