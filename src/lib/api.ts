@@ -174,7 +174,13 @@ export type LeadStatusApi =
   | "called"
   | "demo_booked"
   | "won"
-  | "lost";
+  | "lost"
+  | "not_qualified";
+
+export type SalesRep = {
+  id: number;
+  name: string;
+};
 
 export type AiScoreLabel =
   | "LOW_HANGING_FRUIT"
@@ -382,6 +388,15 @@ export const leadsApi = {
     request<{ id: string; name: string; assigned_to: string; message?: string }>(
       `/api/leads/${id}/assign`,
       { method: "PATCH" },
+    ),
+  assignees: () => request<SalesRep[]>("/api/leads/assignees"),
+  bulkAssign: (leadIds: string[], assigneeId: number) =>
+    request<{ assigned_to: string; updated: number; missing_ids: number[] }>(
+      "/api/leads/assignments",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ lead_ids: leadIds.map(Number), assignee_id: assigneeId }),
+      },
     ),
   import: async (file: File, lead_type?: LeadType) => {
     const fd = new FormData();
@@ -668,6 +683,7 @@ export const STATUS_LABEL: Record<LeadStatusApi, string> = {
   demo_booked: "Demo Booked",
   won: "Won",
   lost: "Lost",
+  not_qualified: "Not Qualified",
 };
 
 export const STATUS_OPTIONS: LeadStatusApi[] = [
@@ -676,5 +692,6 @@ export const STATUS_OPTIONS: LeadStatusApi[] = [
   "demo_booked",
   "won",
   "lost",
+  "not_qualified",
 ];
 

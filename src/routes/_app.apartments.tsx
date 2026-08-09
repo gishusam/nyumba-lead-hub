@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExternalLink, Loader2, Mail, Phone, Search, Send, Upload, UserPlus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import {
   type AiScoreLabel,
   type OutreachFilter,
   type OutreachLead,
+  type SalesRep,
 } from "@/lib/api";
 import { StatusBadgeApi } from "@/components/StatusBadge";
 import { AiScoreBadge, AI_SCORE_OPTIONS } from "@/components/AiScoreBadge";
@@ -128,6 +129,8 @@ export function LeadsTable({
   const [filterSource, setFilterSource] = useState("");
   const [filterStatus, setFilterStatus] = useState<"" | LeadStatusApi>("");
   const [filterAiScore, setFilterAiScore] = useState<"" | AiScoreLabel>("");
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
 
   // Panel config (supports defaultTab + defaultEmailFlow)
   const [panelConfig, setPanelConfig] = useState<PanelConfig | null>(null);
@@ -146,6 +149,21 @@ export function LeadsTable({
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (err: any) => toast.error(err?.message ?? "Failed to assign lead"),
+  });
+
+  const bulkAssignMut = useMutation({
+    mutationFn: ({ leadIds, assigneeId }: { leadIds: string[]; assigneeId: number }) =>
+      leadsApi.bulkAssign(leadIds, assigneeId),
+    onSuccess: (result) => {
+      toast.success(`${result.updated} lead${result.updated === 1 ? "" : "s"} assigned to ${result.assigned_to}`);
+      setSelectedLeadIds(new Set());
+      setSelectedAssigneeId("");
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["leads", "mine"] });
+      qc.invalidateQueries({ queryKey: ["outreach"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Failed to assign selected leads"),
   });
 
   const limit = 20;
@@ -185,6 +203,36 @@ export function LeadsTable({
     if (filterAiScore && (r.ai_score_label as string) !== filterAiScore) return false;
     return true;
   });
+  const visibleLeadIds = filteredOutreach.map((lead) => lead.id);
+  const allVisibleSelected = visibleLeadIds.length > 0 && visibleLeadIds.every((id) => selectedLeadIds.has(id));
+
+  useEffect(() => {
+    setSelectedLeadIds(new Set());
+    setSelectedAssigneeId("");
+  }, [outreachTab, outreachPage, area, filterSource, filterStatus, filterAiScore, q]);
+
+  const assigneesQ = useQuery({
+    queryKey: ["leads", "assignees"],
+    queryFn: () => leadsApi.assignees(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const toggleLeadSelection = (leadId: string, selected: boolean) => {
+    setSelectedLeadIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(leadId);
+      else next.delete(leadId);
+      return next;
+    });
+  };
+
+  const toggleVisibleSelection = (selected: boolean) => {
+    setSelectedLeadIds((current) => {
+      const next = new Set(current);
+      visibleLeadIds.forEach((id) => selected ? next.add(id) : next.delete(id));
+      return next;
+    });
+  };
 
   // Derive available sources from current data for the dropdown
   const availableSources = Array.from(new Set(outreachData.map((r) => r.source).filter(Boolean))) as string[];
@@ -315,11 +363,61 @@ export function LeadsTable({
           </select>
         </div>
 
+        {selectedLeadIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-3 border-b border-border bg-primary/5 px-4 py-3">
+            <span className="text-sm font-medium" aria-live="polite">
+              {selectedLeadIds.size} selected
+            </span>
+            <label className="sr-only" htmlFor="bulk-assignee">Assign selected leads to</label>
+            <select
+              id="bulk-assignee"
+              value={selectedAssigneeId}
+              onChange={(event) => setSelectedAssigneeId(event.target.value)}
+              className="h-9 min-w-[180px] rounded-lg border border-input bg-background px-3 text-sm"
+              disabled={assigneesQ.isLoading || bulkAssignMut.isPending}
+            >
+              <option value="">Choose sales rep</option>
+              {(assigneesQ.data ?? []).map((rep: SalesRep) => (
+                <option key={rep.id} value={rep.id}>{rep.name}</option>
+              ))}
+            </select>
+            <Button
+              size="sm"
+              disabled={!selectedAssigneeId || bulkAssignMut.isPending}
+              onClick={() => bulkAssignMut.mutate({
+                leadIds: [...selectedLeadIds],
+                assigneeId: Number(selectedAssigneeId),
+              })}
+            >
+              {bulkAssignMut.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Assign selected
+            </Button>
+            <button
+              type="button"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => setSelectedLeadIds(new Set())}
+              disabled={bulkAssignMut.isPending}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
         {/* ── Outreach table ── */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-muted-foreground">
               <tr className="text-left text-xs uppercase tracking-wide">
+                <th className="w-12 px-4 py-3 font-medium">
+                  <input
+                    type="checkbox"
+                    aria-label="Select visible leads"
+                    checked={allVisibleSelected}
+                    onChange={(event) => toggleVisibleSelection(event.target.checked)}
+                    disabled={visibleLeadIds.length === 0 || bulkAssignMut.isPending}
+                    className="h-4 w-4 accent-primary"
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Owner</th>
                 <th className="px-4 py-3 font-medium">Area</th>
@@ -335,21 +433,21 @@ export function LeadsTable({
             <tbody className="divide-y divide-border">
               {isLoading && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
                     Loading…
                   </td>
                 </tr>
               )}
               {isError && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-destructive">
+                  <td colSpan={11} className="px-4 py-10 text-center text-destructive">
                     Failed to load leads.
                   </td>
                 </tr>
               )}
               {!isLoading && !isError && filteredOutreach.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
                     No leads found.
                   </td>
                 </tr>
@@ -360,6 +458,16 @@ export function LeadsTable({
                   onClick={() => openPanel(r)}
                   className="hover:bg-muted/30 cursor-pointer"
                 >
+                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${r.name}`}
+                      checked={selectedLeadIds.has(r.id)}
+                      onChange={(event) => toggleLeadSelection(r.id, event.target.checked)}
+                      disabled={bulkAssignMut.isPending}
+                      className="h-4 w-4 accent-primary"
+                    />
+                  </td>
                   {/* Name */}
                   <td className="px-4 py-3 font-medium max-w-[160px]">
                     <span className="truncate block">{r.name}</span>

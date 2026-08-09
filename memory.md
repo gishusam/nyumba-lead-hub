@@ -8,6 +8,7 @@
 - [2026-07-29 - Canonical design-system reference](#2026-07-29---canonical-design-system-reference)
 - [2026-07-29 - Application shell UX direction](#2026-07-29---application-shell-ux-direction)
 - [2026-07-29 - Guided scraper workspace and canonical location contract](#2026-07-29---guided-scraper-workspace-and-canonical-location-contract)
+- [2026-08-09 - Sales team UAT](#2026-08-09---sales-team-uat)
 
 ## 2026-07-27 - Dashboard and lead-table API repair
 
@@ -66,3 +67,11 @@
 - `src/routes/_app.scrape.tsx` removed the duplicate country/county/city controls, fake SVG geography, and default Thika selection. The existing Import Pipeline, Run History, Record Audit, and Run Health implementations remain in place. The first KPI is labelled `Runs Loaded`, since `/api/scraper/runs` returns a bounded recent window rather than lifetime totals.
 - Verification: all 16 frontend Node tests pass; scoped ESLint for the new workspace/planner passes; `npx tsc --noEmit` passes; the complete client/SSR/Nitro production build passes. Repository-wide lint remains blocked by the existing CRLF Prettier baseline across unrelated files.
 - Headed `agent-browser` verification exercised Apartments, Agencies, Developers, area search, canonical selection, exact query preview, and 1440×1000/390×844 layouts against a production-shaped local API. Screenshots are under `docs/assets/scraper-guided-workspace-20260729/`.
+
+## 2026-08-09 - Sales team UAT
+
+- `LeadStatusApi`, the lead-table status selector, status badge, mock data, and `STATUS_OPTIONS` all include `not_qualified` / `Not Qualified`. The option is available in both the table filter and an individual row's existing status control.
+- The Apartments table adds an explicit selection column, a select-visible header checkbox, and a contextual assignment bar. Selections are reset whenever the visible result set changes, so a rep cannot assign a row that has been filtered or paged away. The picker loads active assignable users from the backend and the original row-level `Assign me` action remains separate.
+- `leadsApi.bulkAssign` calls `PATCH /api/leads/assignments` with a numeric lead ID list and selected user ID; success refreshes the lead, My Leads, outreach, and dashboard data. API-client coverage verifies the request body and method.
+- Design read: this is a dense sales-operations table for frequent internal use, so the implementation retains the existing compact visual system and uses a conditional selection state rather than persistent controls or a new layout.
+- Verification: focused API-client tests and `tsc --noEmit` pass. Headed agent-browser UAT selected all visible rows, assigned them to Brian Otieno, changed a row to Not Qualified, and confirmed the retained `Assign me` flow assigns a row to Sam UAT. Evidence: `docs/assets/sales-team-uat-selected.png`, `docs/assets/sales-team-uat-bulk-assigned.png`, and `docs/assets/sales-team-uat-verified.png`.
