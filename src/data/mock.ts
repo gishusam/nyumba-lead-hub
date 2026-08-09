@@ -1,4 +1,4 @@
-export type LeadStatus = "New" | "Called" | "Demo Booked" | "Won" | "Lost";
+export type LeadStatus = "New" | "Called" | "Demo Booked" | "Won" | "Lost" | "Not Qualified";
 export type LeadSource = "Apartments" | "Agencies" | "Landlords";
 
 export const AREAS = [
@@ -89,7 +89,7 @@ const pick = <T,>(arr: T[], i: number) => arr[i % arr.length];
 const phone = (i: number) =>
   `+254 7${String(10 + (i % 90))} ${String(100 + ((i * 7) % 900))} ${String(100 + ((i * 13) % 900))}`;
 const status = (s: number): LeadStatus => {
-  const order: LeadStatus[] = ["New", "Called", "Demo Booked", "Won", "Lost"];
+  const order: LeadStatus[] = ["New", "Called", "Demo Booked", "Won", "Lost", "Not Qualified"];
   return order[s % order.length];
 };
 

@@ -7,6 +7,7 @@ const styles: Record<LeadStatus, string> = {
   "Demo Booked": "bg-primary/10 text-primary border-primary/20",
   Won: "bg-success/15 text-success border-success/30",
   Lost: "bg-destructive/10 text-destructive border-destructive/20",
+  "Not Qualified": "bg-muted text-muted-foreground border-border",
 };
 
 export function StatusBadge({ status }: { status: LeadStatus }) {

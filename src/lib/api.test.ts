@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { API_BASE_URL, dashboardApi, scraperApi } from "./api.ts";
+import { API_BASE_URL, dashboardApi, leadsApi, scraperApi } from "./api.ts";
 
 test("dashboard by-area ignores TanStack query context objects", async () => {
   const originalFetch = globalThis.fetch;
@@ -27,6 +27,35 @@ test("dashboard by-area ignores TanStack query context objects", async () => {
     requestedUrl,
     `${API_BASE_URL}/api/dashboard/by-area`,
   );
+});
+
+test("bulk assignment uses the selected lead ids and sales-rep id", async () => {
+  const originalFetch = globalThis.fetch;
+  let request: { url: string; method: string; body?: unknown } | undefined;
+
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    request = {
+      url: String(input),
+      method: init?.method ?? "GET",
+      body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
+    };
+    return new Response(JSON.stringify({ assigned_to: "Aisha Hassan", updated: 2, missing_ids: [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  try {
+    await leadsApi.bulkAssign(["11", "12"], 7);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.deepEqual(request, {
+    url: `${API_BASE_URL}/api/leads/assignments`,
+    method: "PATCH",
+    body: { lead_ids: [11, 12], assignee_id: 7 },
+  });
 });
 
 test("scraper API preserves the existing run, history, and audit contracts", async () => {
