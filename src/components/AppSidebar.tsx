@@ -6,6 +6,7 @@ import {
   Briefcase,
   UserSquare2,
   Inbox,
+  MessageSquare,
   BarChart3,
   FileBarChart,
   Settings,
@@ -14,13 +15,7 @@ import {
   Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -30,6 +25,7 @@ const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/developers", label: "Developers", icon: Building },
   { to: "/landlords", label: "Landlords", icon: UserSquare2 },
   { to: "/leads", label: "My Leads", icon: Inbox },
+  { to: "/communications", label: "Communications", icon: MessageSquare },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/settings", label: "Settings", icon: Settings },

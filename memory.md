@@ -8,6 +8,7 @@
 - [2026-07-29 - Canonical design-system reference](#2026-07-29---canonical-design-system-reference)
 - [2026-07-29 - Application shell UX direction](#2026-07-29---application-shell-ux-direction)
 - [2026-07-29 - Guided scraper workspace and canonical location contract](#2026-07-29---guided-scraper-workspace-and-canonical-location-contract)
+- [2026-08-14 - Communications dashboard local-data workspace](#2026-08-14---communications-dashboard-local-data-workspace)
 
 ## 2026-07-27 - Dashboard and lead-table API repair
 
@@ -66,3 +67,17 @@
 - `src/routes/_app.scrape.tsx` removed the duplicate country/county/city controls, fake SVG geography, and default Thika selection. The existing Import Pipeline, Run History, Record Audit, and Run Health implementations remain in place. The first KPI is labelled `Runs Loaded`, since `/api/scraper/runs` returns a bounded recent window rather than lifetime totals.
 - Verification: all 16 frontend Node tests pass; scoped ESLint for the new workspace/planner passes; `npx tsc --noEmit` passes; the complete client/SSR/Nitro production build passes. Repository-wide lint remains blocked by the existing CRLF Prettier baseline across unrelated files.
 - Headed `agent-browser` verification exercised Apartments, Agencies, Developers, area search, canonical selection, exact query preview, and 1440×1000/390×844 layouts against a production-shaped local API. Screenshots are under `docs/assets/scraper-guided-workspace-20260729/`.
+
+## 2026-08-14 - Communications dashboard local-data workspace
+
+- `/communications` is a responsive, route-local Communications workspace with a campaign overview, selectable and keyboard-accessible recent-campaign table, local five-row pagination, selected campaign delivery detail, delivery/domain modules, Recharts donuts, and an honest New Campaign dialog.
+- The selected-campaign detail uses a vertical section rail on desktop and compact horizontally-scrollable tabs only on narrow viewports. The Top performing campaign card is independently fixed to Product Demo Outreach, so selecting a table row cannot alter its 69 of 72 delivery summary or donut legend.
+- The overview/right-rail two-column grid begins at `2xl`, not `xl`, because the desktop app sidebar leaves insufficient inner width at a 1440px viewport. Smaller widths stack the panels so the right rail and New Campaign action remain visible rather than being clipped.
+- The overview labels the fixed 229/214/7/3 sample as sent-campaign metrics because it includes a Sending record. A persistent local-demo disclosure states that no campaign service is connected; the New Campaign dialog repeats that limitation. The campaign table keeps ordinary row semantics and uses a focus-visible, state-labelled button in its campaign-name cell for selection. Draft selection renders a Not sent yet state instead of a fabricated delivery timeline.
+- At narrow widths, the All campaigns title block and View all campaigns action intentionally remain on one flex row; KPI cells use mobile horizontal padding before the existing desktop edge/divider overrides take effect.
+- Visual revamp: the route now follows the communications reference more closely without changing its local-data boundary or interactions. The overview is a coloured, arrow-linked campaign-health strip; the right rail carries visible CSS donuts for top delivery and campaign mix; the selected-campaign overview uses tinted KPI tiles and an actual Recharts delivery trend; and the detail's domain and campaign-detail modules remain visible beside it on desktop.
+- Responsive revamp: the desktop rail activates at `xl` with a 19rem column after reducing the table to its essential widths. On narrow screens, the table removes the secondary Type and Sent columns, so Campaign, Recipients, Delivery, and Status fit without horizontal scrolling. Browser QA confirmed functional selection, tabs, pagination, New Campaign capability dialog, visible charts/donuts, and no root horizontal overflow at 1440px and 390px.
+- There is intentionally no campaign API call, endpoint, or create/send behaviour. All campaign data is deterministic typed local data until a real campaign service contract exists.
+- `AppSidebar.tsx` is the navigation source of truth for both desktop and mobile. Communications appears between My Leads and Analytics with the `MessageSquare` icon.
+- The page uses the locked Nyumba system: existing shadcn Button/Dialog primitives, white surfaces, emerald primary action, semantic text labels plus colour, compact utility text, restrained borders, and responsive stacking designed to avoid page-level horizontal overflow.
+- Verification: scoped ESLint, `npx tsc --noEmit`, and the production build pass. In-app-browser QA at `http://127.0.0.1:5000/communications` used a disposable local test session (no production credentials): desktop 1440px and mobile 390px both had no page-level horizontal overflow; campaign selection, second-page pagination, draft no-activity state, and the honest New Campaign dialog worked. The existing development-only Lovable `data-tsd-source` hydration warning was observed again and is unrelated to this route.

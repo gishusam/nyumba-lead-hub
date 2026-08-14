@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppAgenciesRouteImport } from './routes/_app.agencies'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppApartmentsRouteImport } from './routes/_app.apartments'
+import { Route as AppCommunicationsRouteImport } from './routes/_app.communications'
 import { Route as AppDevelopersRouteImport } from './routes/_app.developers'
 import { Route as AppLandlordsRouteImport } from './routes/_app.landlords'
 import { Route as AppLeadsRouteImport } from './routes/_app.leads'
@@ -57,6 +58,11 @@ const AppApartmentsRoute = AppApartmentsRouteImport.update({
   path: '/apartments',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCommunicationsRoute = AppCommunicationsRouteImport.update({
+  id: '/communications',
+  path: '/communications',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDevelopersRoute = AppDevelopersRouteImport.update({
   id: '/developers',
   path: '/developers',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/agencies': typeof AppAgenciesRoute
   '/analytics': typeof AppAnalyticsRoute
   '/apartments': typeof AppApartmentsRoute
+  '/communications': typeof AppCommunicationsRoute
   '/developers': typeof AppDevelopersRoute
   '/landlords': typeof AppLandlordsRoute
   '/leads': typeof AppLeadsRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/agencies': typeof AppAgenciesRoute
   '/analytics': typeof AppAnalyticsRoute
   '/apartments': typeof AppApartmentsRoute
+  '/communications': typeof AppCommunicationsRoute
   '/developers': typeof AppDevelopersRoute
   '/landlords': typeof AppLandlordsRoute
   '/leads': typeof AppLeadsRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/_app/agencies': typeof AppAgenciesRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/apartments': typeof AppApartmentsRoute
+  '/_app/communications': typeof AppCommunicationsRoute
   '/_app/developers': typeof AppDevelopersRoute
   '/_app/landlords': typeof AppLandlordsRoute
   '/_app/leads': typeof AppLeadsRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/analytics'
     | '/apartments'
+    | '/communications'
     | '/developers'
     | '/landlords'
     | '/leads'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/agencies'
     | '/analytics'
     | '/apartments'
+    | '/communications'
     | '/developers'
     | '/landlords'
     | '/leads'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/_app/agencies'
     | '/_app/analytics'
     | '/_app/apartments'
+    | '/_app/communications'
     | '/_app/developers'
     | '/_app/landlords'
     | '/_app/leads'
@@ -235,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppApartmentsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/communications': {
+      id: '/_app/communications'
+      path: '/communications'
+      fullPath: '/communications'
+      preLoaderRoute: typeof AppCommunicationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/developers': {
       id: '/_app/developers'
       path: '/developers'
@@ -284,6 +303,7 @@ interface AppRouteChildren {
   AppAgenciesRoute: typeof AppAgenciesRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppApartmentsRoute: typeof AppApartmentsRoute
+  AppCommunicationsRoute: typeof AppCommunicationsRoute
   AppDevelopersRoute: typeof AppDevelopersRoute
   AppLandlordsRoute: typeof AppLandlordsRoute
   AppLeadsRoute: typeof AppLeadsRoute
@@ -297,6 +317,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAgenciesRoute: AppAgenciesRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppApartmentsRoute: AppApartmentsRoute,
+  AppCommunicationsRoute: AppCommunicationsRoute,
   AppDevelopersRoute: AppDevelopersRoute,
   AppLandlordsRoute: AppLandlordsRoute,
   AppLeadsRoute: AppLeadsRoute,
