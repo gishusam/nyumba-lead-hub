@@ -1,3 +1,5 @@
+import type { NewsletterDraft } from "./newsletter/types";
+
 export type CampaignType = "cold_outreach" | "newsletter";
 export type AudienceSource = "leads" | "mailing_list" | "csv";
 
@@ -37,4 +39,5 @@ export type CampaignDraftState = {
   senderEmail: string;
   subject: string;
   body: string;
+  newsletter: NewsletterDraft | null;
 };

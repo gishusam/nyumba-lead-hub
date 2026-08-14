@@ -1,4 +1,5 @@
 import type { AudienceFilter, CampaignDraftState } from "./types";
+import { renderNewsletter, validateNewsletter } from "./newsletter/render-newsletter";
 
 export function createCampaignDraft(): CampaignDraftState {
   return {
@@ -11,6 +12,7 @@ export function createCampaignDraft(): CampaignDraftState {
     senderEmail: "",
     subject: "",
     body: "",
+    newsletter: null,
   };
 }
 
@@ -51,6 +53,27 @@ export function canContinueFromAudience(state: CampaignDraftState): boolean {
 
 export function canContinueFromReview(state: CampaignDraftState): boolean {
   return Boolean(state.review?.accepted && state.review.ready > 0);
+}
+
+export function canContinueFromCompose(state: CampaignDraftState): boolean {
+  if (!state.senderEmail.trim() || !state.subject.trim()) return false;
+
+  if (state.campaignType !== "newsletter") {
+    return Boolean(state.body.trim());
+  }
+
+  if (!state.newsletter || validateNewsletter(state.newsletter).length > 0) {
+    return false;
+  }
+
+  const rendered = renderNewsletter(state.newsletter, {
+    contact_name: "Preview contact",
+    company_name: "Preview company",
+    area: "Preview area",
+    unsubscribe_url: "https://nyumbazetu.com/unsubscribe-preview",
+  });
+
+  return Boolean(rendered.text.trim());
 }
 
 export function personalizePreview(

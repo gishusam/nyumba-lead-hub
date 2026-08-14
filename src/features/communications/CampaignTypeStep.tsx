@@ -3,6 +3,7 @@ import type {
   CampaignDraftState,
   CampaignType,
 } from "./types";
+import { createNewsletterFromTemplate } from "./newsletter/templates";
 
 export function CampaignTypeStep({
   state,
@@ -23,7 +24,7 @@ export function CampaignTypeStep({
       id: "newsletter" as const,
       title: "Newsletter",
       description:
-        "Send product updates, events, training, renewals and customer communications.",
+        "Create branded Nyumba Zetu updates, nurture campaigns and demo-focused HTML emails.",
       icon: Newspaper,
     },
   ];
@@ -35,11 +36,14 @@ export function CampaignTypeStep({
       ...state,
       campaignType,
       subject: newsletter
-        ? "Invitation: Nyumba Zetu product event in {area}"
+        ? "See how Nyumba Zetu can help {company_name} work smarter"
         : "See how Nyumba Zetu can support {company_name}",
       body: newsletter
-        ? "Hi {contact_name},\n\nWe would like to invite {company_name} to an upcoming Nyumba Zetu product event in {area}, where we will demonstrate how our property-management software supports rent collection, maintenance workflows, reporting and customer operations.\n\nRegards,\nNyumba Zetu"
-        : "Hi {contact_name},\n\nI’m reaching out from Nyumba Zetu. Our property-management software helps teams such as {company_name} streamline rent collection, maintenance workflows and reporting.\n\nWould you be open to a short product demo?\n\nRegards,\nNyumba Zetu",
+        ? state.body
+        : "Hi {contact_name},\n\nI’m reaching out from Nyumba Zetu. Our software helps real-estate teams such as {company_name} keep lead management, customer follow-up and everyday workflows better organized.\n\nWould you be open to a short product demo?\n\nRegards,\nNyumba Zetu",
+      newsletter: newsletter
+        ? state.newsletter ?? createNewsletterFromTemplate("book-demo")
+        : state.newsletter,
     });
   };
 

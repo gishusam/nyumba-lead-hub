@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { CampaignDraftState } from "./types";
+import { NewsletterComposer } from "./newsletter/NewsletterComposer";
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring";
@@ -11,6 +12,10 @@ export function CampaignComposer({
   state: CampaignDraftState;
   onChange: (state: CampaignDraftState) => void;
 }) {
+  if (state.campaignType === "newsletter") {
+    return <NewsletterComposer state={state} onChange={onChange} />;
+  }
+
   const insertToken = (token: string) =>
     onChange({
       ...state,

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   canContinueFromAudience,
   canContinueFromBasics,
+  canContinueFromCompose,
   canContinueFromReview,
   createCampaignDraft,
 } from "./campaign-state";
@@ -101,9 +102,7 @@ export function NewCampaignWizard() {
     (step === "review" &&
       !canContinueFromReview(state)) ||
     (step === "compose" &&
-      (!state.senderEmail.trim() ||
-        !state.subject.trim() ||
-        !state.body.trim()));
+      !canContinueFromCompose(state));
 
   const goNext = async () => {
     if (step === "basics") {
