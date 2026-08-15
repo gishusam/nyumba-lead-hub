@@ -1,9 +1,26 @@
 import { Monitor, Smartphone } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { CampaignDraftState, ResolvedRecipient } from "../types";
-import { renderNewsletter, validateNewsletter } from "./render-newsletter";
+import { isSafeLink, renderNewsletter, validateNewsletter } from "./render-newsletter";
 
 type PreviewMode = "desktop" | "mobile";
+
+function wirePreviewLinks(iframe: HTMLIFrameElement | null) {
+  const doc = iframe?.contentDocument;
+  if (!doc) return;
+
+  doc.onclick = (event) => {
+    const target = event.target as HTMLElement | null;
+    const anchor = target?.closest?.("a");
+    if (!anchor) return;
+
+    event.preventDefault();
+    const href = anchor.getAttribute("href")?.trim() ?? "";
+    if (!isSafeLink(href)) return;
+
+    window.open(href, "_blank", "noopener,noreferrer");
+  };
+}
 
 export function NewsletterPreview({
   state,
@@ -12,6 +29,7 @@ export function NewsletterPreview({
   state: CampaignDraftState;
   recipient: ResolvedRecipient;
 }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [mode, setMode] = useState<PreviewMode>("desktop");
   if (!state.newsletter) return null;
 
@@ -48,9 +66,11 @@ export function NewsletterPreview({
 
       <div className="overflow-auto rounded-xl border border-border bg-muted/30 p-4 sm:p-8">
         <iframe
+          ref={iframeRef}
           title="Newsletter email preview"
           srcDoc={rendered.html}
-          sandbox="allow-popups allow-popups-to-escape-sandbox"
+          sandbox="allow-same-origin"
+          onLoad={() => wirePreviewLinks(iframeRef.current)}
           className="mx-auto h-[760px] rounded-lg border border-border bg-white shadow-sm transition-[width]"
           style={{ width: mode === "desktop" ? "min(100%, 660px)" : "360px", maxWidth: "100%" }}
         />

@@ -1,4 +1,5 @@
-import { renderNewsletter, validateNewsletter } from "./render-newsletter";
+import { useRef } from "react";
+import { isSafeLink, renderNewsletter, validateNewsletter } from "./render-newsletter";
 import type { NewsletterDraft } from "./types";
 
 function draftForLocalPreview(draft: NewsletterDraft): NewsletterDraft {
@@ -13,7 +14,25 @@ function draftForLocalPreview(draft: NewsletterDraft): NewsletterDraft {
   };
 }
 
+function wirePreviewLinks(iframe: HTMLIFrameElement | null) {
+  const doc = iframe?.contentDocument;
+  if (!doc) return;
+
+  doc.onclick = (event) => {
+    const target = event.target as HTMLElement | null;
+    const anchor = target?.closest?.("a");
+    if (!anchor) return;
+
+    event.preventDefault();
+    const href = anchor.getAttribute("href")?.trim() ?? "";
+    if (!isSafeLink(href)) return;
+
+    window.open(href, "_blank", "noopener,noreferrer");
+  };
+}
+
 export function NewsletterCanvas({ draft }: { draft: NewsletterDraft }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const previewDraft = draftForLocalPreview(draft);
   const rendered = renderNewsletter(previewDraft, {
     contact_name: "Jane",
@@ -35,9 +54,11 @@ export function NewsletterCanvas({ draft }: { draft: NewsletterDraft }) {
       )}
       <div className="overflow-hidden rounded-xl border border-border bg-muted/20 p-4 sm:p-6">
         <iframe
+          ref={iframeRef}
           title="Newsletter visual preview"
           srcDoc={rendered.html}
-          sandbox="allow-popups allow-popups-to-escape-sandbox"
+          sandbox="allow-same-origin"
+          onLoad={() => wirePreviewLinks(iframeRef.current)}
           className="mx-auto h-[680px] w-full max-w-[660px] rounded-lg border border-border bg-white shadow-sm"
         />
       </div>
