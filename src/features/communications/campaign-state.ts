@@ -7,6 +7,8 @@ export function createCampaignDraft(): CampaignDraftState {
     campaignType: null,
     audienceSource: "leads",
     filters: {},
+    csvFileName: null,
+    csvSummary: null,
     review: null,
     senderName: "Nyumba Zetu",
     senderEmail: "",
@@ -47,7 +49,16 @@ export function canContinueFromBasics(state: CampaignDraftState): boolean {
 }
 
 export function canContinueFromAudience(state: CampaignDraftState): boolean {
+  if (state.audienceSource === "csv") {
+    return Boolean(
+      state.csvFileName &&
+      state.csvSummary &&
+      state.csvSummary.valid > 0
+    );
+  }
+
   if (state.audienceSource !== "leads") return false;
+
   return Object.keys(buildRecipientFilter(state)).length > 0;
 }
 

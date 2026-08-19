@@ -15,6 +15,7 @@ export type AuthUser = {
   name: string;
   email: string;
   role?: string;
+  can_manage_communication_templates?: boolean;
 };
 
 export function getToken(): string | null {
@@ -400,6 +401,275 @@ export const leadsApi = {
     }
     return (await res.json()) as LeadImportReport;
   },
+};
+
+
+// ============= Communications =============
+export type CommunicationType =
+  | "cold_outreach"
+  | "newsletter";
+
+export type CampaignRecipientType =
+  | "leads"
+  | "mailing_list"
+  | "csv_upload";
+
+export type CommunicationsCampaign = {
+  id: number;
+  name: string;
+  subject: string;
+  status: string;
+  communication_type: CommunicationType | null;
+  recipient_type: CampaignRecipientType;
+  sender_email?: string | null;
+
+  total_recipients: number;
+  sent_count: number;
+  delivered_count: number;
+  opened_count: number;
+  clicked_count: number;
+  bounced_count: number;
+  failed_count: number;
+
+  created_by?: string | null;
+  created_at?: string | null;
+  finished_at?: string | null;
+};
+
+export type CampaignPerformanceRecipient = {
+  email: string;
+  name?: string | null;
+  status: string;
+  resend_id?: string | null;
+
+  sent_at?: string | null;
+  delivered_at?: string | null;
+  opened_at?: string | null;
+  clicked_at?: string | null;
+  bounced_at?: string | null;
+  failed_at?: string | null;
+
+  open_count: number;
+  click_count: number;
+
+  bounce_reason?: string | null;
+  error?: string | null;
+  last_event_at?: string | null;
+};
+
+export type CampaignPerformance = {
+  campaign: {
+    id: number;
+    name: string;
+    subject: string;
+    status: string;
+    recipient_type: CampaignRecipientType;
+    communication_type: CommunicationType | null;
+    created_at?: string | null;
+    finished_at?: string | null;
+  };
+
+  summary: {
+    recipients: number;
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+    failed: number;
+
+    open_events: number;
+    click_events: number;
+
+    delivery_rate: number;
+    open_rate: number;
+    click_rate: number;
+  };
+
+  recipients: CampaignPerformanceRecipient[];
+};
+
+export type CampaignCreateInput = {
+  name: string;
+  communication_type: CommunicationType;
+  subject: string;
+  body: string;
+  sender_name: string;
+  sender_email: string;
+  recipient_type: CampaignRecipientType;
+  recipient_filter?: {
+    area?: string;
+    lead_type?: string;
+    status?: string;
+    ai_score?: string;
+  };
+};
+
+export type CampaignCreateResult = {
+  id: number;
+  name: string;
+  status: string;
+};
+
+export type EmailSettingsResponse = {
+  sender_name: string;
+  template_cold: {
+    label: string;
+    subject: string;
+    body: string;
+  };
+  template_followup: {
+    label: string;
+    subject: string;
+    body: string;
+  };
+  placeholders: Record<string, string>;
+};
+
+export type EmailSettingsUpdate = {
+  sender_name?: string;
+  template_cold?: {
+    subject: string;
+    body: string;
+  };
+  template_followup?: {
+    subject: string;
+    body: string;
+  };
+};
+
+export type EmailSettingsUpdateResult = {
+  updated: number;
+  updated_by: string;
+  message: string;
+};
+
+export const emailSettingsApi = {
+  get: () =>
+    request<EmailSettingsResponse>(
+      "/api/settings/email",
+    ),
+
+  update: (input: EmailSettingsUpdate) =>
+    request<EmailSettingsUpdateResult>(
+      "/api/settings/email",
+      {
+        method: "PUT",
+        body: JSON.stringify(input),
+      },
+    ),
+};
+
+export const communicationsApi = {
+  list: () =>
+    request<CommunicationsCampaign[]>(
+      "/api/comms/campaigns",
+    ),
+
+  performance: (id: number | string) =>
+    request<CampaignPerformance>(
+      `/api/comms/campaigns/${id}/performance`,
+    ),
+
+  create: (input: CampaignCreateInput) =>
+    request<CampaignCreateResult>(
+      "/api/comms/campaigns",
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+      },
+    ),
+
+  uploadAttachment: async (
+    id: number | string,
+    attachment: File,
+  ): Promise<{
+    campaign_id: number;
+    attachment_name: string;
+    attachment_size: number;
+    attachment_mime_type: string;
+  }> => {
+    const token = getToken();
+    const formData = new FormData();
+
+    formData.append("attachment", attachment);
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/comms/campaigns/${id}/attachment`,
+      {
+        method: "POST",
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : {},
+        body: formData,
+      },
+    );
+
+    if (!response.ok) {
+      let body: unknown = null;
+
+      try {
+        body = await response.json();
+      } catch {
+        // Ignore invalid error bodies.
+      }
+
+      throw new ApiError(
+        response.status,
+        body,
+        `Request failed: ${response.status}`,
+      );
+    }
+
+    return response.json();
+  },
+
+  uploadRecipients: (
+    id: number | string,
+    recipients: Array<{
+      name: string;
+      email: string;
+    }>,
+  ) =>
+    request<{
+      uploaded: number;
+      valid: number;
+      invalid: number;
+      duplicates: number;
+    }>(
+      `/api/comms/campaigns/${id}/recipients`,
+      {
+        method: "POST",
+        body: JSON.stringify({ recipients }),
+      },
+    ),
+
+  review: (id: number | string) =>
+    request<{
+      campaign_id: number;
+      status: string;
+      recipients: Array<{
+        email: string;
+        name: string;
+      }>;
+    }>(
+      `/api/comms/campaigns/${id}/review`,
+      {
+        method: "POST",
+      },
+    ),
+
+  confirmSend: (id: number | string) =>
+    request<{
+      campaign_id: number;
+      status: string;
+      total_recipients: number;
+    }>(
+      `/api/comms/campaigns/${id}/confirm-send`,
+      {
+        method: "POST",
+      },
+    ),
 };
 
 // ============= Reports =============

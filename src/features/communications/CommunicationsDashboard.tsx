@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -19,162 +20,22 @@ import {
   YAxis,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import {
+  communicationsApi,
+  type CampaignPerformanceRecipient,
+} from "@/lib/api";
+import {
+  buildDeliveryTimeline,
+  buildDomainRows,
+  paginateRows,
+  summarizeCampaigns,
+  toDashboardCampaign,
+  type DashboardCampaign,
+  type DashboardCampaignStatus,
+} from "./communications-dashboard-data";
 
-type CampaignStatus = "Delivered" | "Sending" | "Draft";
-type CampaignType = "Email" | "Newsletter" | "Event";
-
-type Campaign = {
-  id: string;
-  name: string;
-  subject: string;
-  type: CampaignType;
-  status: CampaignStatus;
-  sentAt: string;
-  recipients: number;
-  delivered: number;
-  opened: number;
-  clicked: number;
-  bounced: number;
-  failed: number;
-  owner: string;
-  segment: string;
-};
-
-const campaigns: Campaign[] = [
-  {
-    id: "kilimani-agency-event",
-    name: "Kilimani Agency Event",
-    subject: "You're invited: Kilimani Agency Partner Event",
-    type: "Event",
-    status: "Delivered",
-    sentAt: "14 Aug 2026, 09:15",
-    recipients: 48,
-    delivered: 46,
-    opened: 31,
-    clicked: 12,
-    bounced: 1,
-    failed: 1,
-    owner: "Alice Wanjiku",
-    segment: "Kilimani agencies",
-  },
-  {
-    id: "product-demo-outreach",
-    name: "Product Demo Outreach",
-    subject: "See Nyumba Zetu lead intelligence in action",
-    type: "Email",
-    status: "Delivered",
-    sentAt: "13 Aug 2026, 14:30",
-    recipients: 72,
-    delivered: 69,
-    opened: 52,
-    clicked: 26,
-    bounced: 2,
-    failed: 1,
-    owner: "Brian Otieno",
-    segment: "Qualified agency leads",
-  },
-  {
-    id: "customer-product-update",
-    name: "Customer Product Update",
-    subject: "A faster way to work your property leads",
-    type: "Email",
-    status: "Delivered",
-    sentAt: "11 Aug 2026, 10:00",
-    recipients: 39,
-    delivered: 37,
-    opened: 24,
-    clicked: 9,
-    bounced: 1,
-    failed: 1,
-    owner: "Alice Wanjiku",
-    segment: "Active customers",
-  },
-  {
-    id: "monthly-property-insights",
-    name: "Monthly Property Insights",
-    subject: "Nairobi property demand: August highlights",
-    type: "Newsletter",
-    status: "Delivered",
-    sentAt: "05 Aug 2026, 08:00",
-    recipients: 41,
-    delivered: 39,
-    opened: 27,
-    clicked: 7,
-    bounced: 2,
-    failed: 0,
-    owner: "Brian Otieno",
-    segment: "Property newsletter subscribers",
-  },
-  {
-    id: "westlands-portfolio-intro",
-    name: "Westlands Portfolio Intro",
-    subject: "A clearer view of Westlands opportunities",
-    type: "Email",
-    status: "Sending",
-    sentAt: "14 Aug 2026, 16:20",
-    recipients: 29,
-    delivered: 23,
-    opened: 8,
-    clicked: 2,
-    bounced: 1,
-    failed: 0,
-    owner: "Brian Otieno",
-    segment: "Westlands portfolio owners",
-  },
-  {
-    id: "landlord-welcome",
-    name: "Landlord Welcome Series",
-    subject: "Welcome to better lead visibility",
-    type: "Email",
-    status: "Draft",
-    sentAt: "Not sent",
-    recipients: 24,
-    delivered: 0,
-    opened: 0,
-    clicked: 0,
-    bounced: 0,
-    failed: 0,
-    owner: "Alice Wanjiku",
-    segment: "New landlord leads",
-  },
-];
-
-const topPerformingCampaign = campaigns.find(
-  (campaign) => campaign.id === "product-demo-outreach",
-)!;
-const topPerformingDelivery = [
-  {
-    name: "Delivered",
-    value: topPerformingCampaign.delivered,
-    color: "var(--color-chart-1)",
-  },
-  { name: "Bounced", value: topPerformingCampaign.bounced, color: "var(--color-chart-3)" },
-  { name: "Failed", value: topPerformingCampaign.failed, color: "var(--color-chart-5)" },
-  {
-    name: "Pending",
-    value: Math.max(
-      topPerformingCampaign.recipients -
-        topPerformingCampaign.delivered -
-        topPerformingCampaign.bounced -
-        topPerformingCampaign.failed,
-      0,
-    ),
-    color: "var(--color-muted)",
-  },
-].filter((item) => item.value > 0);
-
-const campaignTypes = [
-  { name: "Email", value: 4, color: "var(--color-chart-1)" },
-  { name: "Newsletter", value: 1, color: "var(--color-chart-2)" },
-  { name: "Event", value: 1, color: "var(--color-chart-3)" },
-];
-
-const domainRows = [
-  { domain: "gmail.com", delivered: 28, rate: "96.6%", width: "97%" },
-  { domain: "outlook.com", delivered: 16, rate: "94.1%", width: "94%" },
-  { domain: "company domains", delivered: 19, rate: "90.5%", width: "91%" },
-  { domain: "yahoo.com", delivered: 6, rate: "85.7%", width: "86%" },
-];
+type Campaign = DashboardCampaign;
+type CampaignStatus = DashboardCampaignStatus;
 
 const detailNav = ["Overview", "Recipients", "Delivered", "Bounced", "Failed", "Activity log"];
 const pageSize = 5;
@@ -183,13 +44,30 @@ function percentage(part: number, total: number) {
   return total ? `${((part / total) * 100).toFixed(1)}%` : "0.0%";
 }
 
+function formatCampaignDate(value: string | null) {
+  if (!value) return "Not sent";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("en-KE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 function StatusPill({ status }: { status: CampaignStatus }) {
   const tone =
-    status === "Delivered"
+    status === "Sent"
       ? "bg-success/10 text-success"
       : status === "Sending"
         ? "bg-info/10 text-info"
-        : "bg-muted text-muted-foreground";
+        : status === "Failed"
+          ? "bg-destructive/10 text-destructive"
+          : status === "Ready"
+            ? "bg-warning/15 text-warning-foreground"
+            : "bg-muted text-muted-foreground";
   return (
     <span className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${tone}`}>
       {status}
@@ -263,42 +141,318 @@ function DonutVisual({
   );
 }
 
-function timelineFor(campaign: Campaign) {
-  const delivered = campaign.delivered;
-  const bounced = campaign.bounced;
-  const failed = campaign.failed;
-  return [
-    { time: "0 min", delivered: 0, bounced: 0, failed: 0 },
-    {
-      time: "15 min",
-      delivered: Math.round(delivered * 0.52),
-      bounced: Math.round(bounced * 0.5),
-      failed: 0,
-    },
-    {
-      time: "30 min",
-      delivered: Math.round(delivered * 0.79),
-      bounced,
-      failed: Math.round(failed * 0.5),
-    },
-    { time: "45 min", delivered: Math.round(delivered * 0.91), bounced, failed },
-    { time: "2 hrs", delivered: Math.round(delivered * 0.98), bounced, failed },
-    { time: "24 hrs", delivered, bounced, failed },
-  ];
+function PaginationControls({
+  from,
+  to,
+  total,
+  page,
+  totalPages,
+  label,
+  onPrevious,
+  onNext,
+}: {
+  from: number;
+  to: number;
+  total: number;
+  page: number;
+  totalPages: number;
+  label: string;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  if (total <= 10) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+      <div className="text-xs tabular-nums text-muted-foreground">
+        {from}–{to} of {total} {label}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={page <= 1}
+          onClick={onPrevious}
+        >
+          Previous
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={page >= totalPages}
+          onClick={onNext}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function CommunicationsDashboard() {
-  const [selectedId, setSelectedId] = useState("product-demo-outreach");
+  const campaignQuery = useQuery({
+    queryKey: ["communications", "campaigns"],
+    queryFn: communicationsApi.list,
+  });
+
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [detailTab, setDetailTab] = useState("Overview");
-  const selected = campaigns.find((campaign) => campaign.id === selectedId) ?? campaigns[0];
-  const totalPages = Math.ceil(campaigns.length / pageSize);
-  const visibleCampaigns = campaigns.slice((page - 1) * pageSize, page * pageSize);
+  const [detailPage, setDetailPage] = useState(1);
+  const [domainPage, setDomainPage] = useState(1);
+
+  const apiCampaigns = campaignQuery.data ?? [];
+  const campaigns = apiCampaigns.map(toDashboardCampaign);
+  const summary = summarizeCampaigns(apiCampaigns);
+
+  const selected =
+    campaigns.find((campaign) => campaign.id === selectedId) ??
+    campaigns[0];
+
+  useEffect(() => {
+    setDetailPage(1);
+    setDomainPage(1);
+  }, [selected?.id]);
+
+  useEffect(() => {
+    setDetailPage(1);
+  }, [detailTab]);
+
+  const performanceQuery = useQuery({
+    queryKey: [
+      "communications",
+      "campaigns",
+      selected?.id,
+      "performance",
+    ],
+    queryFn: () =>
+      communicationsApi.performance(selected!.id),
+    enabled: Boolean(selected),
+  });
+
+  const performance = performanceQuery.data;
+  const performanceRecipients =
+    performance?.recipients ?? [];
+
+  const deliveryTimeline =
+    buildDeliveryTimeline(performanceRecipients);
+
+  const domainRows =
+    buildDomainRows(performanceRecipients).sort(
+      (a, b) =>
+        b.recipients - a.recipients ||
+        a.domain.localeCompare(b.domain),
+    );
+
+  const detailRecipients =
+    detailTab === "Delivered"
+      ? performanceRecipients.filter(
+          (recipient) => Boolean(recipient.delivered_at),
+        )
+      : detailTab === "Bounced"
+        ? performanceRecipients.filter(
+            (recipient) => Boolean(recipient.bounced_at),
+          )
+        : detailTab === "Failed"
+          ? performanceRecipients.filter(
+              (recipient) => Boolean(recipient.failed_at),
+            )
+          : performanceRecipients;
+
+  const recipientPagination = paginateRows(
+    detailRecipients,
+    detailPage,
+    10,
+  );
+
+  const domainPagination = paginateRows(
+    domainRows,
+    domainPage,
+    10,
+  );
+
+  const activityRows = performanceRecipients
+    .flatMap((recipient) => {
+      const events: Array<{
+        email: string;
+        name: string | null | undefined;
+        event: string;
+        timestamp: string;
+        detail?: string | null;
+      }> = [];
+
+      const addEvent = (
+        event: string,
+        timestamp?: string | null,
+        detail?: string | null,
+      ) => {
+        if (!timestamp) return;
+
+        events.push({
+          email: recipient.email,
+          name: recipient.name,
+          event,
+          timestamp,
+          detail,
+        });
+      };
+
+      addEvent("Sent", recipient.sent_at);
+      addEvent("Delivered", recipient.delivered_at);
+      addEvent("Opened", recipient.opened_at);
+      addEvent("Clicked", recipient.clicked_at);
+      addEvent(
+        "Bounced",
+        recipient.bounced_at,
+        recipient.bounce_reason,
+      );
+      addEvent(
+        "Failed",
+        recipient.failed_at,
+        recipient.error,
+      );
+
+      return events;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() -
+        new Date(a.timestamp).getTime(),
+    );
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(campaigns.length / pageSize),
+  );
+
+  const visibleCampaigns = campaigns.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
 
   const selectCampaign = (campaign: Campaign) => {
     setSelectedId(campaign.id);
     setDetailTab("Overview");
   };
+
+  if (campaignQuery.isLoading) {
+    return (
+      <div className="mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6 lg:p-8">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Communications
+        </h1>
+        <div className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground shadow-sm">
+          Loading campaigns…
+        </div>
+      </div>
+    );
+  }
+
+  if (campaignQuery.isError) {
+    return (
+      <div className="mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6 lg:p-8">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Communications
+        </h1>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+          <div className="font-medium text-destructive">
+            Could not load campaigns
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Check the Communications API connection and try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selected) {
+    return (
+      <div className="mx-auto max-w-[1500px] space-y-5 p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Communications
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              No campaigns have been created yet.
+            </p>
+          </div>
+
+          <Button asChild>
+            <Link to="/communications/new">
+              <Plus /> New Campaign
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const topPerformingCampaign = campaigns.reduce(
+    (best, campaign) =>
+      campaign.delivered > best.delivered ? campaign : best,
+    campaigns[0],
+  );
+
+  const topPerformingDelivery = [
+    {
+      name: "Delivered",
+      value: topPerformingCampaign.delivered,
+      color: "var(--color-chart-1)",
+    },
+    {
+      name: "Bounced",
+      value: topPerformingCampaign.bounced,
+      color: "var(--color-chart-3)",
+    },
+    {
+      name: "Failed",
+      value: topPerformingCampaign.failed,
+      color: "var(--color-chart-5)",
+    },
+    {
+      name: "Pending",
+      value: Math.max(
+        topPerformingCampaign.recipients -
+          topPerformingCampaign.delivered -
+          topPerformingCampaign.bounced -
+          topPerformingCampaign.failed,
+        0,
+      ),
+      color: "var(--color-muted)",
+    },
+  ].filter((item) => item.value > 0);
+
+  const campaignTypes = [
+    {
+      name: "Cold Outreach",
+      value: campaigns.filter(
+        (campaign) => campaign.type === "Cold Outreach",
+      ).length,
+      color: "var(--color-chart-1)",
+    },
+    {
+      name: "Newsletter",
+      value: campaigns.filter(
+        (campaign) => campaign.type === "Newsletter",
+      ).length,
+      color: "var(--color-chart-2)",
+    },
+    {
+      name: "Unknown",
+      value: campaigns.filter(
+        (campaign) => campaign.type === "Unknown",
+      ).length,
+      color: "var(--color-muted-foreground)",
+    },
+  ].filter((item) => item.value > 0);
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-5 overflow-x-hidden p-4 sm:p-6 lg:p-8">
@@ -320,10 +474,15 @@ export function CommunicationsDashboard() {
       </div>
 
       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-info" aria-hidden="true" />
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full bg-success"
+          aria-hidden="true"
+        />
         <span>
-          <span className="font-semibold text-foreground">Local demo data.</span> A campaign service
-          is not connected; metrics are deterministic examples.
+          <span className="font-semibold text-foreground">
+            Live campaign data.
+          </span>{" "}
+          Campaigns and delivery totals are loaded from the Communications API.
         </span>
       </div>
 
@@ -352,7 +511,7 @@ export function CommunicationsDashboard() {
         <div className="grid grid-cols-2 gap-2 border-t border-border p-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] sm:items-center sm:gap-3 sm:p-4">
           <OverviewMetric
             label="Total recipients"
-            value="229"
+            value={String(summary.recipients)}
             detail="Across sent campaigns"
             tone="neutral"
           />
@@ -362,20 +521,30 @@ export function CommunicationsDashboard() {
           />
           <OverviewMetric
             label="Delivered"
-            value="214"
-            detail="93.4% delivery rate"
+            value={String(summary.delivered)}
+            detail={`${percentage(summary.delivered, summary.recipients)} delivery rate`}
             tone="success"
           />
           <ArrowRight
             className="hidden h-4 w-4 text-muted-foreground sm:block"
             aria-hidden="true"
           />
-          <OverviewMetric label="Bounced" value="7" detail="3.1% of recipients" tone="warning" />
+          <OverviewMetric
+            label="Bounced"
+            value={String(summary.bounced)}
+            detail={`${percentage(summary.bounced, summary.recipients)} of recipients`}
+            tone="warning"
+          />
           <ArrowRight
             className="hidden h-4 w-4 text-muted-foreground sm:block"
             aria-hidden="true"
           />
-          <OverviewMetric label="Failed" value="3" detail="1.3% of recipients" tone="destructive" />
+          <OverviewMetric
+            label="Failed"
+            value={String(summary.failed)}
+            detail={`${percentage(summary.failed, summary.recipients)} of recipients`}
+            tone="destructive"
+          />
         </div>
       </section>
 
@@ -395,7 +564,7 @@ export function CommunicationsDashboard() {
                 </p>
               </div>
               <span className="text-xs text-muted-foreground">
-                {campaigns.length} local campaigns
+                {campaigns.length} campaigns
               </span>
             </div>
             <div className="overflow-x-auto">
@@ -442,7 +611,7 @@ export function CommunicationsDashboard() {
                           </div>
                         </td>
                         <td className="hidden whitespace-nowrap px-2 py-3 text-xs text-muted-foreground lg:table-cell">
-                          {campaign.sentAt}
+                          {formatCampaignDate(campaign.sentAt)}
                         </td>
                         <td className="px-3 py-3 text-right">
                           <StatusPill status={campaign.status} />
@@ -498,7 +667,7 @@ export function CommunicationsDashboard() {
                 variant="outline"
                 size="sm"
                 disabled
-                title="Export is unavailable until a campaign service is connected"
+                title="Campaign export is not available yet"
               >
                 <Download /> Export
               </Button>
@@ -522,61 +691,99 @@ export function CommunicationsDashboard() {
                 </div>
               </nav>
               <div className="min-w-0 p-4 sm:p-5">
-                {detailTab === "Overview" ? (
+                {performanceQuery.isLoading ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground">
+                    Loading campaign performance…
+                  </div>
+                ) : performanceQuery.isError ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <div className="text-sm font-medium text-destructive">
+                      Could not load campaign performance
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      The campaign exists, but its detailed delivery data could not be loaded.
+                    </p>
+                  </div>
+                ) : detailTab === "Overview" && performance ? (
                   <>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       <OverviewMetric
                         label="Recipients"
-                        value={String(selected.recipients)}
+                        value={String(performance.summary.recipients)}
                         detail="Targeted audience"
                         tone="neutral"
                       />
                       <OverviewMetric
                         label="Delivered"
-                        value={String(selected.delivered)}
-                        detail={percentage(selected.delivered, selected.recipients)}
+                        value={String(performance.summary.delivered)}
+                        detail={`${performance.summary.delivery_rate.toFixed(1)}%`}
                         tone="success"
                       />
                       <OverviewMetric
                         label="Opened"
-                        value={String(selected.opened)}
-                        detail={percentage(selected.opened, selected.delivered)}
+                        value={String(performance.summary.opened)}
+                        detail={`${performance.summary.open_rate.toFixed(1)}%`}
                         tone="neutral"
                       />
                       <OverviewMetric
                         label="Clicked"
-                        value={String(selected.clicked)}
-                        detail={percentage(selected.clicked, selected.delivered)}
+                        value={String(performance.summary.clicked)}
+                        detail={`${performance.summary.click_rate.toFixed(1)}%`}
                         tone="neutral"
                       />
                     </div>
-                    {selected.status === "Draft" ? (
+
+                    {(selected.status === "Draft" ||
+                      selected.status === "Ready") ? (
                       <div className="mt-6 border-t border-border pt-5">
-                        <h3 className="text-sm font-semibold">Delivery timeline</h3>
+                        <h3 className="text-sm font-semibold">
+                          Delivery timeline
+                        </h3>
                         <div className="mt-3 rounded-md bg-muted/60 p-3 text-sm">
-                          <div className="font-medium">Not sent yet</div>
+                          <div className="font-medium">
+                            Not sent yet
+                          </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Delivery activity will appear after this draft is sent through a
-                            connected campaign service.
+                            Delivery activity will appear once this campaign is sent.
                           </p>
+                        </div>
+                      </div>
+                    ) : deliveryTimeline.length === 0 ? (
+                      <div className="mt-6 border-t border-border pt-5">
+                        <h3 className="text-sm font-semibold">
+                          Delivery timeline
+                        </h3>
+                        <div className="mt-3 rounded-md bg-muted/60 p-3 text-sm text-muted-foreground">
+                          No delivery events have been received for this campaign yet.
                         </div>
                       </div>
                     ) : (
                       <div className="mt-5 border-t border-border pt-4">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <h3 className="text-sm font-semibold">Delivery timeline</h3>
+                            <h3 className="text-sm font-semibold">
+                              Delivery timeline
+                            </h3>
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                              Most delivery completed in the first 45 minutes.
+                              Actual delivery events reported for campaign recipients.
                             </p>
                           </div>
-                          <span className="text-xs text-muted-foreground">{selected.sentAt}</span>
+
+                          <span className="text-xs text-muted-foreground">
+                            {formatCampaignDate(selected.sentAt)}
+                          </span>
                         </div>
+
                         <div className="mt-4 h-52 rounded-lg border border-border bg-muted/20 p-3">
                           <ResponsiveContainer>
                             <LineChart
-                              data={timelineFor(selected)}
-                              margin={{ top: 6, right: 4, left: -18, bottom: 0 }}
+                              data={deliveryTimeline}
+                              margin={{
+                                top: 6,
+                                right: 4,
+                                left: -18,
+                                bottom: 0,
+                              }}
                             >
                               <CartesianGrid
                                 stroke="var(--color-border)"
@@ -589,7 +796,11 @@ export function CommunicationsDashboard() {
                                 tickLine={false}
                                 axisLine={false}
                               />
-                              <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                              <YAxis
+                                tick={{ fontSize: 10 }}
+                                tickLine={false}
+                                axisLine={false}
+                              />
                               <Tooltip />
                               <Legend
                                 iconType="circle"
@@ -626,13 +837,176 @@ export function CommunicationsDashboard() {
                       </div>
                     )}
                   </>
+                ) : detailTab === "Activity log" ? (
+                  activityRows.length === 0 ? (
+                    <div className="py-10 text-center text-sm text-muted-foreground">
+                      No campaign activity has been recorded yet.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="border-b border-border text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          <tr>
+                            <th className="px-2 py-2">
+                              Recipient
+                            </th>
+                            <th className="px-2 py-2">
+                              Event
+                            </th>
+                            <th className="px-2 py-2">
+                              Time
+                            </th>
+                            <th className="px-2 py-2">
+                              Detail
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {activityRows.map((row, index) => (
+                            <tr
+                              key={`${row.email}-${row.event}-${row.timestamp}-${index}`}
+                            >
+                              <td className="px-2 py-3">
+                                <div className="font-medium">
+                                  {row.name || row.email}
+                                </div>
+                                {row.name ? (
+                                  <div className="text-xs text-muted-foreground">
+                                    {row.email}
+                                  </div>
+                                ) : null}
+                              </td>
+                              <td className="px-2 py-3">
+                                {row.event}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-3 text-xs text-muted-foreground">
+                                {formatCampaignDate(
+                                  row.timestamp,
+                                )}
+                              </td>
+                              <td className="px-2 py-3 text-xs text-muted-foreground">
+                                {row.detail || "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
                 ) : (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground">{detailTab}</p>
-                    <p className="mt-1">
-                      Campaign event data will appear here when a campaign service is connected.
-                    </p>
-                  </div>
+                  <>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold">
+                          {detailTab}
+                        </h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {detailRecipients.length} recipient
+                          {detailRecipients.length === 1
+                            ? ""
+                            : "s"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {detailRecipients.length === 0 ? (
+                      <div className="rounded-lg bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">
+                        No recipients in this category.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="border-b border-border text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            <tr>
+                              <th className="px-2 py-2">
+                                Recipient
+                              </th>
+                              <th className="px-2 py-2">
+                                Status
+                              </th>
+                              <th className="px-2 py-2">
+                                Opens
+                              </th>
+                              <th className="px-2 py-2">
+                                Clicks
+                              </th>
+                              <th className="px-2 py-2">
+                                Last activity
+                              </th>
+                            </tr>
+                          </thead>
+
+                          <tbody className="divide-y divide-border">
+                            {recipientPagination.items.map(
+                              (
+                                recipient: CampaignPerformanceRecipient,
+                              ) => (
+                                <tr key={recipient.email}>
+                                  <td className="px-2 py-3">
+                                    <div className="font-medium">
+                                      {recipient.name ||
+                                        recipient.email}
+                                    </div>
+                                    {recipient.name ? (
+                                      <div className="text-xs text-muted-foreground">
+                                        {recipient.email}
+                                      </div>
+                                    ) : null}
+                                  </td>
+
+                                  <td className="px-2 py-3 capitalize">
+                                    {recipient.status}
+                                  </td>
+
+                                  <td className="px-2 py-3 tabular-nums">
+                                    {recipient.open_count}
+                                  </td>
+
+                                  <td className="px-2 py-3 tabular-nums">
+                                    {recipient.click_count}
+                                  </td>
+
+                                  <td className="whitespace-nowrap px-2 py-3 text-xs text-muted-foreground">
+                                    {formatCampaignDate(
+                                      recipient.last_event_at ??
+                                        recipient.failed_at ??
+                                        recipient.bounced_at ??
+                                        recipient.clicked_at ??
+                                        recipient.opened_at ??
+                                        recipient.delivered_at ??
+                                        recipient.sent_at ??
+                                        null,
+                                    )}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <PaginationControls
+                        from={recipientPagination.from}
+                        to={recipientPagination.to}
+                        total={recipientPagination.total}
+                        page={recipientPagination.page}
+                        totalPages={recipientPagination.totalPages}
+                        label="recipients"
+                        onPrevious={() =>
+                          setDetailPage(
+                            recipientPagination.page - 1,
+                          )
+                        }
+                        onNext={() =>
+                          setDetailPage(
+                            recipientPagination.page + 1,
+                          )
+                        }
+                      />
+                    </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -696,7 +1070,7 @@ export function CommunicationsDashboard() {
             <h2 id="campaign-types-heading" className="text-sm font-semibold">
               Campaign types
             </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Local campaign mix</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Current campaign mix</p>
             <div className="mt-4 flex items-center gap-4">
               <DonutVisual
                 segments={campaignTypes}
@@ -723,25 +1097,75 @@ export function CommunicationsDashboard() {
             aria-labelledby="domains-heading"
             className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5"
           >
-            <h2 id="domains-heading" className="text-sm font-semibold">
+            <h2
+              id="domains-heading"
+              className="text-sm font-semibold"
+            >
               Delivery by domain
             </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Product Demo Outreach recipients</p>
-            <div className="mt-4 space-y-3">
-              {domainRows.map((row) => (
-                <div key={row.domain}>
-                  <div className="flex justify-between gap-3 text-xs">
-                    <span className="font-medium">{row.domain}</span>
-                    <span className="tabular-nums text-muted-foreground">
-                      {row.delivered} delivered · {row.rate}
-                    </span>
+
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {selected.name} recipients
+            </p>
+
+            {performanceQuery.isLoading ? (
+              <div className="mt-4 text-xs text-muted-foreground">
+                Loading domain delivery…
+              </div>
+            ) : performanceQuery.isError ? (
+              <div className="mt-4 text-xs text-destructive">
+                Domain delivery unavailable.
+              </div>
+            ) : domainRows.length === 0 ? (
+              <div className="mt-4 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+                No recipient domain delivery data yet.
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {domainPagination.items.map((row) => (
+                  <div key={row.domain}>
+                    <div className="flex justify-between gap-3 text-xs">
+                      <span className="truncate font-medium">
+                        {row.domain}
+                      </span>
+
+                      <span className="shrink-0 tabular-nums text-muted-foreground">
+                        {row.delivered} / {row.recipients} ·{" "}
+                        {row.deliveryRate.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-success"
+                        style={{
+                          width: `${row.deliveryRate}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-success" style={{ width: row.width }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+
+                <PaginationControls
+                  from={domainPagination.from}
+                  to={domainPagination.to}
+                  total={domainPagination.total}
+                  page={domainPagination.page}
+                  totalPages={domainPagination.totalPages}
+                  label="domains"
+                  onPrevious={() =>
+                    setDomainPage(
+                      domainPagination.page - 1,
+                    )
+                  }
+                  onNext={() =>
+                    setDomainPage(
+                      domainPagination.page + 1,
+                    )
+                  }
+                />
+              </div>
+            )}
           </section>
           <section
             aria-labelledby="campaign-details-heading"
@@ -757,7 +1181,7 @@ export function CommunicationsDashboard() {
               </div>
               <div className="flex justify-between gap-4 py-2">
                 <dt className="text-muted-foreground">Audience</dt>
-                <dd className="text-right font-medium">{selected.segment}</dd>
+                <dd className="text-right font-medium">{selected.audience}</dd>
               </div>
               <div className="flex justify-between gap-4 py-2">
                 <dt className="text-muted-foreground">Owner</dt>
@@ -765,7 +1189,7 @@ export function CommunicationsDashboard() {
               </div>
               <div className="flex justify-between gap-4 py-2">
                 <dt className="text-muted-foreground">Sent</dt>
-                <dd className="text-right font-medium">{selected.sentAt}</dd>
+                <dd className="text-right font-medium">{formatCampaignDate(selected.sentAt)}</dd>
               </div>
             </dl>
           </section>

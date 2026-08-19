@@ -1,8 +1,11 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type {
   AudienceFilter,
+  AudienceSource,
   CampaignDraftState,
+  ResolvedRecipient,
 } from "./types";
+import { parseCsvAudience } from "./csv-audience";
 import { setAudienceFilter } from "./campaign-state";
 
 const inputClass =
@@ -11,10 +14,13 @@ const inputClass =
 export function AudienceBuilder({
   state,
   onChange,
+  onCsvRecipients,
 }: {
   state: CampaignDraftState;
   onChange: (state: CampaignDraftState) => void;
+  onCsvRecipients: (recipients: ResolvedRecipient[]) => void;
 }) {
+  const [csvError, setCsvError] = useState<string | null>(null);
   const setFilter = (
     key: keyof AudienceFilter,
     value: string,
@@ -24,33 +30,95 @@ export function AudienceBuilder({
     ([, value]) => Boolean(value),
   );
 
+  const selectSource = (audienceSource: AudienceSource) => {
+    setCsvError(null);
+    onCsvRecipients([]);
+
+    onChange({
+      ...state,
+      audienceSource,
+      filters: {},
+      csvFileName: null,
+      csvSummary: null,
+      review: null,
+    });
+  };
+
+  const handleCsvFile = async (file?: File) => {
+    setCsvError(null);
+
+    if (!file) {
+      onCsvRecipients([]);
+      onChange({
+        ...state,
+        csvFileName: null,
+        csvSummary: null,
+        review: null,
+      });
+      return;
+    }
+
+    try {
+      const result = parseCsvAudience(await file.text());
+
+      onCsvRecipients(result.recipients);
+
+      onChange({
+        ...state,
+        csvFileName: file.name,
+        csvSummary: result.summary,
+        review: null,
+      });
+    } catch (error) {
+      onCsvRecipients([]);
+
+      onChange({
+        ...state,
+        csvFileName: null,
+        csvSummary: null,
+        review: null,
+      });
+
+      setCsvError(
+        error instanceof Error
+          ? error.message
+          : "Could not read this CSV file.",
+      );
+    }
+  };
+
   return (
     <section className="space-y-5">
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-semibold">Choose your audience</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          This working flow resolves recipients from your existing Nyumba Zetu leads.
+          Choose where this campaign's recipients should come from.
         </p>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <SourceCard
             title="Existing leads"
-            description="Live — filter your current Sales Intelligence leads."
-            active
+            description="Filter your current Sales Intelligence leads."
+            active={state.audienceSource === "leads"}
+            onClick={() => selectSource("leads")}
           />
+
           <SourceCard
             title="Mailing list"
-            description="Connect after the mailing-list backend contract is final."
+            description="Saved mailing lists will be available in a later slice."
             disabled
           />
+
           <SourceCard
             title="CSV upload"
-            description="Connect after the upload/review backend contract is final."
-            disabled
+            description="Upload a CSV and review the exact recipients before sending."
+            active={state.audienceSource === "csv"}
+            onClick={() => selectSource("csv")}
           />
         </div>
       </div>
 
+      {state.audienceSource === "leads" ? (
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Area">
@@ -146,7 +214,99 @@ export function AudienceBuilder({
           </div>
         </div>
       </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+          <h3 className="font-semibold">CSV upload</h3>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Upload a CSV containing at least an email column.
+            A name column is optional.
+          </p>
+
+          <label className="mt-5 block cursor-pointer rounded-lg border border-dashed border-border bg-muted/20 p-5 text-center transition-colors hover:bg-muted/40">
+            <span className="block text-sm font-medium">
+              Choose CSV file
+            </span>
+
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Expected columns: name, email
+            </span>
+
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="sr-only"
+              onChange={(event) =>
+                void handleCsvFile(event.target.files?.[0])
+              }
+            />
+          </label>
+
+          {csvError && (
+            <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {csvError}
+            </div>
+          )}
+
+          {state.csvFileName && state.csvSummary && (
+            <div className="mt-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">
+                    {state.csvFileName}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    CSV parsed successfully
+                  </div>
+                </div>
+
+                <span className="rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
+                  Ready
+                </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <CsvStat
+                  label="Uploaded"
+                  value={state.csvSummary.uploaded}
+                />
+                <CsvStat
+                  label="Valid"
+                  value={state.csvSummary.valid}
+                />
+                <CsvStat
+                  label="Invalid"
+                  value={state.csvSummary.invalid}
+                />
+                <CsvStat
+                  label="Duplicates"
+                  value={state.csvSummary.duplicates}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </section>
+  );
+}
+
+function CsvStat({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3">
+      <div className="text-xs text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-xl font-semibold tabular-nums">
+        {value}
+      </div>
+    </div>
   );
 }
 
@@ -155,15 +315,20 @@ function SourceCard({
   description,
   active,
   disabled,
+  onClick,
 }: {
   title: string;
   description: string;
   active?: boolean;
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div
-      className={`rounded-xl border p-4 ${
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`w-full rounded-xl border p-4 text-left transition-colors ${
         active
           ? "border-primary bg-primary/5"
           : disabled
@@ -174,13 +339,13 @@ function SourceCard({
       <div className="flex items-center justify-between gap-3">
         <span className="font-medium">{title}</span>
         <span className="rounded-full bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {active ? "Available" : "Later"}
+          {active ? "Selected" : disabled ? "Later" : "Available"}
         </span>
       </div>
       <div className="mt-1 text-xs leading-5 text-muted-foreground">
         {description}
       </div>
-    </div>
+    </button>
   );
 }
 

@@ -34,10 +34,18 @@ export type CampaignDraftState = {
   campaignType: CampaignType | null;
   audienceSource: AudienceSource;
   filters: AudienceFilter;
+  csvFileName: string | null;
+  csvSummary: {
+    uploaded: number;
+    valid: number;
+    invalid: number;
+    duplicates: number;
+  } | null;
   review: AudienceReviewSummary | null;
   senderName: string;
   senderEmail: string;
   subject: string;
   body: string;
+  attachment?: File | null;
   newsletter: NewsletterDraft | null;
 };

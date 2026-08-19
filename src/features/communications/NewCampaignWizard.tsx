@@ -56,6 +56,9 @@ export function NewCampaignWizard() {
   const [recipients, setRecipients] =
     useState<ResolvedRecipient[]>([]);
 
+  const [previewRecipientIndex, setPreviewRecipientIndex] =
+    useState(0);
+
   const [resolving, setResolving] =
     useState(false);
 
@@ -71,11 +74,38 @@ export function NewCampaignWizard() {
     setResolveError(null);
 
     try {
+      if (state.audienceSource === "csv") {
+        if (!state.csvSummary || recipients.length === 0) {
+          throw new Error(
+            "Upload a CSV with at least one valid recipient.",
+          );
+        }
+
+        setPreviewRecipientIndex(0);
+
+        setState({
+          ...state,
+          review: {
+            matched: state.csvSummary.uploaded,
+            missing_email: 0,
+            invalid: state.csvSummary.invalid,
+            duplicates: state.csvSummary.duplicates,
+            unsubscribed: null,
+            ready: recipients.length,
+            accepted: false,
+          },
+        });
+
+        setStep("review");
+        return;
+      }
+
       const result = await resolveLeadAudience(
         state.filters,
       );
 
       setRecipients(result.recipients);
+      setPreviewRecipientIndex(0);
       setState({
         ...state,
         review: result.summary,
@@ -207,6 +237,7 @@ export function NewCampaignWizard() {
           <AudienceBuilder
             state={state}
             onChange={setState}
+            onCsvRecipients={setRecipients}
           />
 
           {resolveError && (
@@ -233,11 +264,64 @@ export function NewCampaignWizard() {
       )}
 
       {step === "preview" &&
-        recipients[0] && (
-          <EmailPreview
-            state={state}
-            recipient={recipients[0]}
-          />
+        recipients[previewRecipientIndex] && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  Recipient
+                </span>
+
+                <span className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold">
+                  {previewRecipientIndex + 1} of {recipients.length}
+                </span>
+              </div>
+
+              <div className="flex gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={previewRecipientIndex === 0}
+                  onClick={() =>
+                    setPreviewRecipientIndex((current) =>
+                      Math.max(0, current - 1),
+                    )
+                  }
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    previewRecipientIndex ===
+                    recipients.length - 1
+                  }
+                  onClick={() =>
+                    setPreviewRecipientIndex((current) =>
+                      Math.min(
+                        recipients.length - 1,
+                        current + 1,
+                      ),
+                    )
+                  }
+                >
+                  Next recipient
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <EmailPreview
+              state={state}
+              recipient={recipients[previewRecipientIndex]}
+              recipients={recipients}
+            />
+          </div>
         )}
 
       <footer className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -279,12 +363,7 @@ export function NewCampaignWizard() {
               </>
             )}
           </Button>
-        ) : (
-          <div className="text-xs text-muted-foreground">
-            Campaign content is ready for backend
-            draft/save integration.
-          </div>
-        )}
+        ) : null}
       </footer>
     </div>
   );
