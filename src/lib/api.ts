@@ -588,10 +588,34 @@ export type OutreachResponse = {
   limit: number;
 };
 
+export type OutreachListFilters = {
+  q?: string;
+  area?: string;
+  source?: string;
+  status?: LeadStatusApi;
+  ai_score?: AiScoreLabel | string;
+};
+
 export const outreachApi = {
-  list: (leadType: LeadType, filterBy: OutreachFilter = "all", page = 1, limit = 20) =>
+  list: (
+    leadType: LeadType,
+    filterBy: OutreachFilter = "all",
+    page = 1,
+    limit = 20,
+    filters: OutreachListFilters = {},
+  ) =>
     request<OutreachResponse>(
-      `/api/leads/outreach${qs({ lead_type: leadType, filter_by: filterBy, page, limit })}`,
+      `/api/leads/outreach${qs({
+        lead_type: leadType,
+        filter_by: filterBy,
+        page,
+        limit,
+        q: filters.q,
+        area: filters.area,
+        source: filters.source,
+        status: filters.status,
+        ai_score: filters.ai_score,
+      })}`,
     ),
 };
 

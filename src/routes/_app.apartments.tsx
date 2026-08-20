@@ -186,8 +186,25 @@ export function LeadsTable({
 
   // Outreach data (for all 3 tabs — drives the outreach table)
   const outreachQ = useQuery({
-    queryKey: ["outreach", leadType, outreachTab, outreachPage, area],
-    queryFn: () => outreachApi.list(leadType, outreachTab, outreachPage, limit),
+    queryKey: [
+      "outreach",
+      leadType,
+      outreachTab,
+      outreachPage,
+      q,
+      area,
+      filterSource,
+      filterStatus,
+      filterAiScore,
+    ],
+    queryFn: () =>
+      outreachApi.list(leadType, outreachTab, outreachPage, limit, {
+        q: q || undefined,
+        area: area || undefined,
+        source: filterSource || undefined,
+        status: filterStatus || undefined,
+        ai_score: filterAiScore || undefined,
+      }),
     staleTime: 0,
     retry: 1,
   });
@@ -196,13 +213,9 @@ export function LeadsTable({
   const outreachPages = outreachQ.data?.pages ?? 1;
 
   // Text + client-side filters on outreach rows
-  const filteredOutreach = outreachData.filter((r) => {
-    if (q && !r.name.toLowerCase().includes(q.toLowerCase()) && !(r.area ?? "").toLowerCase().includes(q.toLowerCase())) return false;
-    if (filterSource && r.source !== filterSource) return false;
-    if (filterStatus && r.status !== filterStatus) return false;
-    if (filterAiScore && (r.ai_score_label as string) !== filterAiScore) return false;
-    return true;
-  });
+  // Filtering is server-side so results apply across the full dataset,
+  // not just the currently loaded page.
+  const filteredOutreach = outreachData;
   const visibleLeadIds = filteredOutreach.map((lead) => lead.id);
   const allVisibleSelected = visibleLeadIds.length > 0 && visibleLeadIds.every((id) => selectedLeadIds.has(id));
 
@@ -322,8 +335,11 @@ export function LeadsTable({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Filter visible rows…"
+              onChange={(e) => {
+                setQ(e.target.value);
+                setOutreachPage(1);
+              }}
+              placeholder="Search leads…"
               className="w-full h-9 rounded-lg border border-input bg-background pl-9 pr-3 text-sm"
             />
           </div>
@@ -337,7 +353,7 @@ export function LeadsTable({
           </select>
           <select
             value={filterSource}
-            onChange={(e) => setFilterSource(e.target.value)}
+            onChange={(e) => { setFilterSource(e.target.value); setOutreachPage(1); }}
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
           >
             <option value="">All sources</option>
@@ -347,7 +363,7 @@ export function LeadsTable({
           </select>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as "" | LeadStatusApi)}
+            onChange={(e) => { setFilterStatus(e.target.value as "" | LeadStatusApi); setOutreachPage(1); }}
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
           >
             <option value="">All statuses</option>
@@ -355,7 +371,7 @@ export function LeadsTable({
           </select>
           <select
             value={filterAiScore}
-            onChange={(e) => setFilterAiScore(e.target.value as "" | AiScoreLabel)}
+            onChange={(e) => { setFilterAiScore(e.target.value as "" | AiScoreLabel); setOutreachPage(1); }}
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
           >
             <option value="">AI Score: All</option>
