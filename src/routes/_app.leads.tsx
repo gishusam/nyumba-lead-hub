@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Phone, Search } from "lucide-react";
+import { toast } from "sonner";
+import { Loader2, Phone, Search } from "lucide-react";
 import {
   leadsApi,
   STATUS_LABEL,
   STATUS_OPTIONS,
   type Lead,
   type LeadStatusApi,
+  type SalesRep,
 } from "@/lib/api";
 import { StatusBadgeApi } from "@/components/StatusBadge";
 import { AiScoreBadge } from "@/components/AiScoreBadge";
@@ -32,6 +34,8 @@ function MyLeads() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
   const limit = 20;
 
   const query = useQuery({
@@ -49,6 +53,38 @@ function MyLeads() {
       qc.invalidateQueries({ queryKey: ["leads"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
+  });
+
+  const assigneesQuery = useQuery({
+    queryKey: ["leads", "assignees"],
+    queryFn: () => leadsApi.assignees(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const bulkAssignMut = useMutation({
+    mutationFn: ({
+      leadIds,
+      assigneeId,
+    }: {
+      leadIds: string[];
+      assigneeId: number;
+    }) => leadsApi.bulkAssign(leadIds, assigneeId),
+
+    onSuccess: (result) => {
+      toast.success(
+        `${result.updated} lead${result.updated === 1 ? "" : "s"} reassigned to ${result.assigned_to}`,
+      );
+      setSelectedLeadIds(new Set());
+      setSelectedAssigneeId("");
+
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["leads", "mine"] });
+      qc.invalidateQueries({ queryKey: ["outreach"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+
+    onError: (err: any) =>
+      toast.error(err?.message ?? "Failed to reassign selected leads"),
   });
 
   const raw = query.data;
@@ -69,6 +105,35 @@ function MyLeads() {
           (r.area ?? "").toLowerCase().includes(q.toLowerCase()),
       )
     : sorted;
+
+  const visibleLeadIds = filtered.map((lead) => lead.id);
+  const allVisibleSelected =
+    visibleLeadIds.length > 0 &&
+    visibleLeadIds.every((id) => selectedLeadIds.has(id));
+
+  useEffect(() => {
+    setSelectedLeadIds(new Set());
+    setSelectedAssigneeId("");
+  }, [page, q]);
+
+  const toggleLeadSelection = (leadId: string, selected: boolean) => {
+    setSelectedLeadIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(leadId);
+      else next.delete(leadId);
+      return next;
+    });
+  };
+
+  const toggleVisibleSelection = (selected: boolean) => {
+    setSelectedLeadIds((current) => {
+      const next = new Set(current);
+      visibleLeadIds.forEach((id) =>
+        selected ? next.add(id) : next.delete(id),
+      );
+      return next;
+    });
+  };
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
@@ -95,10 +160,76 @@ function MyLeads() {
           </div>
         </div>
 
+        {selectedLeadIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-3 border-b border-border bg-primary/5 px-4 py-3">
+            <span className="text-sm font-medium" aria-live="polite">
+              {selectedLeadIds.size} selected
+            </span>
+
+            <label className="sr-only" htmlFor="my-leads-assignee">
+              Reassign selected leads to
+            </label>
+
+            <select
+              id="my-leads-assignee"
+              value={selectedAssigneeId}
+              onChange={(event) => setSelectedAssigneeId(event.target.value)}
+              disabled={assigneesQuery.isLoading || bulkAssignMut.isPending}
+              className="h-9 min-w-[190px] rounded-lg border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Choose team member</option>
+              {(assigneesQuery.data ?? []).map((rep: SalesRep) => (
+                <option key={rep.id} value={rep.id}>
+                  {rep.name}
+                </option>
+              ))}
+            </select>
+
+            <Button
+              size="sm"
+              disabled={!selectedAssigneeId || bulkAssignMut.isPending}
+              onClick={() =>
+                bulkAssignMut.mutate({
+                  leadIds: [...selectedLeadIds],
+                  assigneeId: Number(selectedAssigneeId),
+                })
+              }
+            >
+              {bulkAssignMut.isPending && (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              )}
+              Reassign selected
+            </Button>
+
+            <button
+              type="button"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => setSelectedLeadIds(new Set())}
+              disabled={bulkAssignMut.isPending}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm" aria-busy={query.isLoading}>
             <thead className="bg-muted/40 text-muted-foreground">
               <tr className="text-left">
+                <th className="w-12 px-4 py-3 font-medium">
+                  <input
+                    type="checkbox"
+                    aria-label="Select visible leads"
+                    checked={allVisibleSelected}
+                    onChange={(event) =>
+                      toggleVisibleSelection(event.target.checked)
+                    }
+                    disabled={
+                      visibleLeadIds.length === 0 || bulkAssignMut.isPending
+                    }
+                    className="h-4 w-4 accent-primary"
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Area</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
@@ -112,21 +243,21 @@ function MyLeads() {
             <tbody className="divide-y divide-border">
               {query.isLoading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
                     Loading your leads…
                   </td>
                 </tr>
               )}
               {query.isError && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-destructive">
+                  <td colSpan={9} className="px-4 py-10 text-center text-destructive">
                     Failed to load your leads.
                   </td>
                 </tr>
               )}
               {!query.isLoading && !query.isError && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-16 text-center text-muted-foreground">
                     <p className="font-medium">No leads assigned to you yet.</p>
                     <p className="mt-1 text-sm">
                       Go to Apartments, Agencies or Developers<br />
@@ -141,6 +272,22 @@ function MyLeads() {
                   onClick={() => setActiveLead(r)}
                   className="hover:bg-muted/30 cursor-pointer"
                 >
+                  <td
+                    className="px-4 py-3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${r.name}`}
+                      checked={selectedLeadIds.has(r.id)}
+                      onChange={(event) =>
+                        toggleLeadSelection(r.id, event.target.checked)
+                      }
+                      disabled={bulkAssignMut.isPending}
+                      className="h-4 w-4 accent-primary"
+                    />
+                  </td>
+
                   <td className="px-4 py-3 font-medium">
                     {r.name}
                     <div className="text-[11px] text-muted-foreground capitalize">{r.lead_type}</div>
