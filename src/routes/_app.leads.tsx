@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Phone, Search } from "lucide-react";
+import { Download, Loader2, Phone, Search } from "lucide-react";
 import {
   leadsApi,
   STATUS_LABEL,
@@ -36,6 +36,7 @@ function MyLeads() {
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
   const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const limit = 20;
 
   const query = useQuery({
@@ -135,13 +136,167 @@ function MyLeads() {
     });
   };
 
+  const exportMyLeads = async () => {
+    setIsExporting(true);
+
+    try {
+      const pageSize = 100;
+      const first = await leadsApi.mine(1, pageSize);
+
+      let allLeads: Lead[] = Array.isArray(first)
+        ? first
+        : first.data ?? [];
+
+      if (!Array.isArray(first) && first.pages > 1) {
+        const remainingPages = Array.from(
+          { length: first.pages - 1 },
+          (_, index) => index + 2,
+        );
+
+        const remaining = await Promise.all(
+          remainingPages.map((pageNumber) =>
+            leadsApi.mine(pageNumber, pageSize),
+          ),
+        );
+
+        allLeads = [
+          ...allLeads,
+          ...remaining.flatMap((result) =>
+            Array.isArray(result) ? result : result.data ?? [],
+          ),
+        ];
+      }
+
+      // Protect against the same lead appearing twice if data changes
+      // while multiple export pages are being fetched.
+      allLeads = Array.from(
+        new Map(allLeads.map((lead) => [lead.id, lead])).values(),
+      );
+
+      if (allLeads.length === 0) {
+        toast.info("You have no assigned leads to export");
+        return;
+      }
+
+      const { default: ExcelJS } = await import("exceljs");
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Nyumba Zetu";
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet("My Leads", {
+        views: [{ state: "frozen", ySplit: 1 }],
+      });
+
+      worksheet.columns = [
+        { header: "Lead Name", key: "name", width: 32 },
+        { header: "Owner", key: "owner", width: 28 },
+        { header: "Type", key: "type", width: 16 },
+        { header: "Area", key: "area", width: 20 },
+        { header: "Phone", key: "phone", width: 18 },
+        { header: "Email", key: "email", width: 30 },
+        { header: "Website", key: "website", width: 36 },
+        { header: "Status", key: "status", width: 18 },
+        { header: "Source", key: "source", width: 20 },
+        { header: "Score", key: "score", width: 12 },
+        { header: "Assigned To", key: "assignedTo", width: 22 },
+        { header: "Last Contacted", key: "lastContacted", width: 18 },
+        { header: "Created Date", key: "createdDate", width: 18 },
+      ];
+
+      const asExcelDate = (value?: string | null) => {
+        if (!value) return null;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      };
+
+      allLeads.forEach((lead) => {
+        worksheet.addRow({
+          name: lead.name,
+          owner: lead.owner_name ?? "",
+          type: lead.lead_type,
+          area: lead.area ?? "",
+          phone: lead.phone ?? "",
+          email: lead.email ?? "",
+          website: lead.website ?? "",
+          status: STATUS_LABEL[lead.status] ?? lead.status,
+          source: lead.source ?? "",
+          score: lead.score ?? "",
+          assignedTo: lead.assigned_to ?? "",
+          lastContacted: asExcelDate(lead.last_contacted),
+          createdDate: asExcelDate(lead.created_at),
+        });
+      });
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.alignment = {
+        vertical: "middle",
+        horizontal: "left",
+      };
+      headerRow.height = 22;
+
+      worksheet.autoFilter = {
+        from: "A1",
+        to: "M1",
+      };
+
+      worksheet.getColumn("lastContacted").numFmt = "yyyy-mm-dd";
+      worksheet.getColumn("createdDate").numFmt = "yyyy-mm-dd";
+
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `my-leads-${new Date()
+        .toISOString()
+        .slice(0, 10)}.xlsx`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+
+      toast.success(
+        `${allLeads.length} lead${allLeads.length === 1 ? "" : "s"} exported to Excel`,
+      );
+    } catch (error: any) {
+      toast.error(error?.message ?? "Failed to export leads");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8 space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">My Leads</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Leads currently assigned to you, sorted by follow-up date.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">My Leads</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Leads currently assigned to you, sorted by follow-up date.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportMyLeads}
+          disabled={isExporting || totalCount === 0}
+        >
+          {isExporting ? (
+            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-1.5 h-4 w-4" />
+          )}
+          {isExporting ? "Exporting…" : "Export Excel"}
+        </Button>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
