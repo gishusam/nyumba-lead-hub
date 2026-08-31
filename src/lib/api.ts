@@ -230,11 +230,36 @@ export type LeadNote = {
   ai_score_reason?: string | null;
 };
 
+export type MyLeadsQueue =
+  | "all"
+  | "needs_attention"
+  | "new"
+  | "not_contacted"
+  | "follow_up"
+  | "contacted"
+  | "demo_booked";
+
+export type MyLeadsCounts = {
+  needs_attention: number;
+  new: number;
+  not_contacted: number;
+  follow_up: number;
+  contacted: number;
+  demo_booked: number;
+};
+
+export type MyLeadsParams = {
+  queue?: MyLeadsQueue;
+  q?: string;
+  status?: LeadStatusApi;
+};
+
 export type LeadListResponse = {
   total: number;
   page: number;
   limit: number;
   pages: number;
+  counts?: MyLeadsCounts;
   data: Lead[];
 };
 
@@ -346,8 +371,10 @@ export type LeadTimelineResponse = {
 export const leadsApi = {
   list: (params: ListLeadsParams = {}) =>
     request<LeadListResponse>(`/api/leads${qs(params)}`),
-  mine: (page = 1, limit = 20) =>
-    request<LeadListResponse | Lead[]>(`/api/leads/mine${qs({ page, limit })}`),
+  mine: (page = 1, limit = 20, params: MyLeadsParams = {}) =>
+    request<LeadListResponse | Lead[]>(
+      `/api/leads/mine${qs({ ...params, page, limit })}`,
+    ),
   get: (id: string) => request<Lead>(`/api/leads/${id}`),
   notes: (id: string) =>
     request<LeadNote[] | { data: LeadNote[]; notes?: LeadNote[] }>(

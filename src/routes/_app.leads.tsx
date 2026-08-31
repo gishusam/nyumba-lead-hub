@@ -9,6 +9,7 @@ import {
   STATUS_OPTIONS,
   type Lead,
   type LeadStatusApi,
+  type MyLeadsQueue,
   type SalesRep,
 } from "@/lib/api";
 import { StatusBadgeApi } from "@/components/StatusBadge";
@@ -29,9 +30,23 @@ function fmtDate(d?: string | null) {
   return dt.toLocaleDateString();
 }
 
+const QUICK_QUEUES: Array<{
+  value: Exclude<MyLeadsQueue, "all">;
+  label: string;
+}> = [
+  { value: "needs_attention", label: "Needs Attention" },
+  { value: "new", label: "New" },
+  { value: "not_contacted", label: "Not Contacted" },
+  { value: "follow_up", label: "Follow-up Due" },
+  { value: "contacted", label: "Contacted" },
+  { value: "demo_booked", label: "Demo Booked" },
+];
+
 function MyLeads() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [queue, setQueue] = useState<MyLeadsQueue>("needs_attention");
+  const [statusFilter, setStatusFilter] = useState<LeadStatusApi | "">("");
   const [page, setPage] = useState(1);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
@@ -40,8 +55,13 @@ function MyLeads() {
   const limit = 20;
 
   const query = useQuery({
-    queryKey: ["leads", "mine", page],
-    queryFn: () => leadsApi.mine(page, limit),
+    queryKey: ["leads", "mine", page, queue, q, statusFilter],
+    queryFn: () =>
+      leadsApi.mine(page, limit, {
+        queue,
+        q: q.trim() || undefined,
+        status: statusFilter || undefined,
+      }),
     staleTime: 0,
     retry: 1,
     refetchOnWindowFocus: true,
@@ -93,19 +113,9 @@ function MyLeads() {
   const data: Lead[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
   const totalPages: number = Array.isArray(raw) ? 1 : (raw?.pages ?? 1);
   const totalCount: number = Array.isArray(raw) ? data.length : (raw?.total ?? data.length);
+  const counts = Array.isArray(raw) ? undefined : raw?.counts;
 
-  const sorted = [...data].sort((a, b) => {
-    const ax = a.follow_up_date ? new Date(a.follow_up_date).getTime() : Infinity;
-    const bx = b.follow_up_date ? new Date(b.follow_up_date).getTime() : Infinity;
-    return ax - bx;
-  });
-  const filtered = q
-    ? sorted.filter(
-        (r) =>
-          r.name.toLowerCase().includes(q.toLowerCase()) ||
-          (r.area ?? "").toLowerCase().includes(q.toLowerCase()),
-      )
-    : sorted;
+  const filtered = data;
 
   const visibleLeadIds = filtered.map((lead) => lead.id);
   const allVisibleSelected =
@@ -115,7 +125,11 @@ function MyLeads() {
   useEffect(() => {
     setSelectedLeadIds(new Set());
     setSelectedAssigneeId("");
-  }, [page, q]);
+  }, [page, q, queue, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, queue, statusFilter]);
 
   const toggleLeadSelection = (leadId: string, selected: boolean) => {
     setSelectedLeadIds((current) => {
@@ -280,7 +294,7 @@ function MyLeads() {
         <div>
           <h1 className="text-2xl font-semibold">My Leads</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Leads currently assigned to you, sorted by follow-up date.
+            Your assigned leads, organized by what needs attention next.
           </p>
         </div>
 
@@ -300,18 +314,63 @@ function MyLeads() {
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 p-4 border-b border-border">
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Filter your leads…"
-              className="w-full h-9 rounded-lg border border-input bg-background pl-9 pr-3 text-sm"
-            />
+        <div className="space-y-3 p-4 border-b border-border">
+          <div className="flex flex-wrap gap-2">
+            {QUICK_QUEUES.map((item) => (
+              <Button
+                key={item.value}
+                type="button"
+                size="sm"
+                variant={
+                  queue === item.value && !statusFilter ? "default" : "outline"
+                }
+                onClick={() => {
+                  setQueue(item.value);
+                  setStatusFilter("");
+                }}
+              >
+                {item.label}
+                {counts && (
+                  <span className="ml-1.5 tabular-nums">
+                    {counts[item.value]}
+                  </span>
+                )}
+              </Button>
+            ))}
           </div>
-          <div className="text-xs text-muted-foreground">
-            {filtered.length} lead{filtered.length === 1 ? "" : "s"}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search your leads…"
+                className="w-full h-9 rounded-lg border border-input bg-background pl-9 pr-3 text-sm"
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                const value = e.target.value as LeadStatusApi | "";
+                setStatusFilter(value);
+                setQueue("all");
+              }}
+              className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+              aria-label="Filter by pipeline status"
+            >
+              <option value="">All pipeline statuses</option>
+              {STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {STATUS_LABEL[status]}
+                </option>
+              ))}
+            </select>
+
+            <div className="text-xs text-muted-foreground">
+              {totalCount} lead{totalCount === 1 ? "" : "s"}
+            </div>
           </div>
         </div>
 
@@ -413,10 +472,9 @@ function MyLeads() {
               {!query.isLoading && !query.isError && filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-4 py-16 text-center text-muted-foreground">
-                    <p className="font-medium">No leads assigned to you yet.</p>
+                    <p className="font-medium">No leads match this view.</p>
                     <p className="mt-1 text-sm">
-                      Go to Apartments, Agencies or Developers<br />
-                      and click <span className="font-medium">Assign to me</span> on any lead.
+                      Try another queue, pipeline status, or search term.
                     </p>
                   </td>
                 </tr>
