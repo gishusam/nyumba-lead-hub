@@ -89,7 +89,14 @@ const AI_LABEL_META: Record<string, { cls: string; dot: string; label: string }>
 };
 
 function aiMeta(label?: string | null) {
-  if (!label) return AI_LABEL_META.NURTURE;
+  if (!label) {
+    return {
+      cls: "bg-zinc-50 text-zinc-600 border-zinc-200",
+      dot: "bg-zinc-400",
+      label: "AI scoring unavailable",
+    };
+  }
+
   return AI_LABEL_META[label] ?? {
     cls: "bg-primary/10 text-primary border-primary/20",
     dot: "bg-primary",
