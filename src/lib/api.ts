@@ -141,6 +141,15 @@ export type DashboardSummary = {
   conversion_rate: number;
 };
 
+export type TeamPerformanceRow = {
+  name: string;
+  new_leads: number;
+  called: number;
+  demos: number;
+  won: number;
+  conversion: number;
+};
+
 export const dashboardApi = {
   summary: () => request<DashboardSummary>("/api/dashboard/summary"),
   bySource: () =>
@@ -153,6 +162,8 @@ export const dashboardApi = {
       `/api/dashboard/by-area${qs({ lead_type })}`,
     );
   },
+  teamPerformance: () =>
+    request<TeamPerformanceRow[]>("/api/dashboard/team-performance"),
   activity: () =>
     request<
       Array<{

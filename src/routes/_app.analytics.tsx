@@ -4,7 +4,7 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi, type LeadStatusApi, STATUS_LABEL } from "@/lib/api";
-import { AREAS, teamPerformance, sourcePerformance } from "@/data/mock";
+import { AREAS, sourcePerformance } from "@/data/mock";
 
 export const Route = createFileRoute("/_app/analytics")({
   head: () => ({ meta: [{ title: "Analytics — Nyumba Zetu" }] }),
@@ -25,6 +25,11 @@ function AnalyticsPage() {
   const sourceQ = useQuery({
     queryKey: ["dashboard", "by-source"],
     queryFn: dashboardApi.bySource,
+    staleTime: 5 * 60 * 1000,
+  });
+  const teamQ = useQuery({
+    queryKey: ["dashboard", "team-performance"],
+    queryFn: dashboardApi.teamPerformance,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -143,34 +148,53 @@ function AnalyticsPage() {
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h3 className="font-semibold mb-4">Sales Team Performance</h3>
-          <table className="w-full text-sm">
-            <thead className="text-muted-foreground text-left text-xs uppercase">
-              <tr>
-                <th className="py-2 font-medium">Rep</th>
-                <th className="py-2 font-medium">Calls</th>
-                <th className="py-2 font-medium">Demos</th>
-                <th className="py-2 font-medium">Conv.</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {teamPerformance.map((t) => (
-                <tr key={t.name}>
-                  <td className="py-3 font-medium">{t.name}</td>
-                  <td className="py-3 tabular-nums">{t.calls}</td>
-                  <td className="py-3 tabular-nums">{t.demos}</td>
-                  <td className="py-3">
-                    <span className="inline-flex items-center rounded-md bg-success/10 text-success px-2 py-0.5 text-xs font-semibold">
-                      {t.conversion}%
-                    </span>
-                  </td>
-                </tr>
+          <div className="mb-4">
+            <h3 className="font-semibold">Sales Team Performance</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Current calendar month
+            </p>
+          </div>
+
+          {teamQ.isLoading ? (
+            <div className="space-y-3 animate-pulse">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-9 rounded-md bg-muted" />
               ))}
-            </tbody>
-          </table>
-          <p className="mt-3 text-xs text-muted-foreground italic">
-            Team performance data is updated manually by your admin.
-          </p>
+            </div>
+          ) : (teamQ.data ?? []).length === 0 ? (
+            <div className="text-sm text-muted-foreground italic">
+              No sales activity recorded yet this month.
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-muted-foreground text-left text-xs uppercase">
+                <tr>
+                  <th className="py-2 font-medium">Rep</th>
+                  <th className="py-2 font-medium">New Leads</th>
+                  <th className="py-2 font-medium">Called</th>
+                  <th className="py-2 font-medium">Demos</th>
+                  <th className="py-2 font-medium">Won</th>
+                  <th className="py-2 font-medium">Conv.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(teamQ.data ?? []).map((t) => (
+                  <tr key={t.name}>
+                    <td className="py-3 font-medium">{t.name}</td>
+                    <td className="py-3 tabular-nums">{t.new_leads}</td>
+                    <td className="py-3 tabular-nums">{t.called}</td>
+                    <td className="py-3 tabular-nums">{t.demos}</td>
+                    <td className="py-3 tabular-nums">{t.won}</td>
+                    <td className="py-3">
+                      <span className="inline-flex items-center rounded-md bg-success/10 text-success px-2 py-0.5 text-xs font-semibold">
+                        {t.conversion}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
