@@ -12,6 +12,7 @@ import {
   Building,
   Database,
   Menu,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: 
   { to: "/developers", label: "Developers", icon: Building },
   { to: "/landlords", label: "Landlords", icon: UserSquare2 },
   { to: "/leads", label: "My Leads", icon: Inbox },
+  { to: "/communications", label: "Communications", icon: Mail },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/settings", label: "Settings", icon: Settings },
