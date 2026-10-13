@@ -66,17 +66,9 @@ export function EmailPreview({
   const [confirmOpen, setConfirmOpen] =
     useState(false);
 
-  if (
+  const isNewsletter =
     state.campaignType === "newsletter" &&
-    state.newsletter
-  ) {
-    return (
-      <NewsletterPreview
-        state={state}
-        recipient={recipient}
-      />
-    );
-  }
+    Boolean(state.newsletter);
 
   const subject = personalizePreview(
     state.subject,
@@ -266,28 +258,37 @@ export function EmailPreview({
 
         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
           <Mail className="h-3.5 w-3.5" />
-          Cold outreach
+          {isNewsletter ? "Newsletter" : "Cold outreach"}
         </div>
       </header>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <EmailMessagePreview
-          campaignName={state.name}
-          senderName={state.senderName}
-          senderEmail={state.senderEmail}
-          recipientName={recipient.contact_name}
-          recipientEmail={recipient.email}
-          subject={subject}
-          body={body}
-          attachment={
-            state.attachment
-              ? {
-                  name: state.attachment.name,
-                  size: state.attachment.size,
-                }
-              : null
-          }
-        />
+        {isNewsletter ? (
+          <div className="min-w-0">
+            <NewsletterPreview
+              state={state}
+              recipient={recipient}
+            />
+          </div>
+        ) : (
+          <EmailMessagePreview
+            campaignName={state.name}
+            senderName={state.senderName}
+            senderEmail={state.senderEmail}
+            recipientName={recipient.contact_name}
+            recipientEmail={recipient.email}
+            subject={subject}
+            body={body}
+            attachment={
+              state.attachment
+                ? {
+                    name: state.attachment.name,
+                    size: state.attachment.size,
+                  }
+                : null
+            }
+          />
+        )}
 
         <aside className="space-y-4">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -415,7 +416,7 @@ export function EmailPreview({
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Send campaign
+                {isNewsletter ? "Send newsletter" : "Send campaign"}
               </>
             )}
           </Button>
@@ -498,7 +499,7 @@ export function EmailPreview({
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    Send campaign
+                    {isNewsletter ? "Send newsletter" : "Send campaign"}
                   </>
                 )}
               </AlertDialogAction>

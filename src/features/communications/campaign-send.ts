@@ -22,6 +22,30 @@ export async function prepareCampaign(
       ? "csv_upload"
       : "leads";
 
+  const configuredAssetBase =
+    (import.meta as any).env?.VITE_EMAIL_ASSET_BASE_URL?.trim() ?? "";
+
+  const browserAssetBase =
+    typeof window !== "undefined" &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+      ? window.location.origin
+      : "";
+
+  const emailAssetBaseUrl = (
+    configuredAssetBase || browserAssetBase
+  ).replace(/\/+$/, "");
+
+  if (
+    state.campaignType === "newsletter" &&
+    state.newsletter &&
+    !emailAssetBaseUrl
+  ) {
+    throw new Error(
+      "Newsletter email assets require a public VITE_EMAIL_ASSET_BASE_URL before sending from localhost.",
+    );
+  }
+
   const newsletterContent =
     state.campaignType === "newsletter" && state.newsletter
       ? renderNewsletter(state.newsletter, {
@@ -29,6 +53,7 @@ export async function prepareCampaign(
           company_name: "{company_name}",
           area: "{area}",
           unsubscribe_url: "{unsubscribe_url}",
+          asset_base_url: emailAssetBaseUrl,
         })
       : null;
 
