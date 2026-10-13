@@ -7,6 +7,8 @@ import { NewsletterBlockList } from "./NewsletterBlockList";
 import { NewsletterCanvas } from "./NewsletterCanvas";
 import { NewsletterHtmlSource } from "./NewsletterHtmlSource";
 import { NewsletterTemplatePicker } from "./NewsletterTemplatePicker";
+import { NyumbaZetuBriefEditor } from "./NyumbaZetuBriefEditor";
+import { NyumbaZetuBriefPreviewPanel } from "./NyumbaZetuBriefPreviewPanel";
 import type { NewsletterDraft, NewsletterTemplateKey } from "./types";
 
 const inputClass =
@@ -22,6 +24,7 @@ export function NewsletterComposer({
   onChange: (state: CampaignDraftState) => void;
 }) {
   const draft = state.newsletter ?? createNewsletterFromTemplate("book-demo");
+  const isBrief = draft.templateKey === "nyumba-zetu-brief";
   const [mode, setMode] = useState<EditorMode>(draft.advancedHtmlMode ? "html" : "visual");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(draft.blocks[0]?.id ?? null);
 
@@ -42,6 +45,8 @@ export function NewsletterComposer({
 
   return (
     <section className="space-y-5">
+      {!isBrief && (
+        <>
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -91,8 +96,110 @@ export function NewsletterComposer({
         <NewsletterTemplatePicker selected={draft.templateKey} onUse={useTemplate} />
       </div>
 
+        </>
+      )}
+
       {mode === "html" ? (
         <NewsletterHtmlSource draft={draft} onChange={setDraft} />
+      ) : draft.templateKey === "nyumba-zetu-brief" ? (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
+            <div>
+              <div className="text-sm font-semibold">
+                Nyumba Zetu Brief workspace
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                Edit campaign content while the branded design stays locked.
+              </div>
+            </div>
+          </div>
+
+          <div className="grid items-start gap-4 xl:grid-cols-[22rem_minmax(34rem,1fr)_21rem]">
+            <div className="space-y-4 self-start">
+              <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Template
+                </div>
+
+                <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                  <div className="text-sm font-semibold">
+                    Nyumba Zetu Brief
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Locked branded editorial template
+                  </p>
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Email details
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  <label className="grid gap-2">
+                    <span className="text-xs font-medium">Subject</span>
+                    <input
+                      className={inputClass}
+                      value={state.subject}
+                      onChange={(event) =>
+                        onChange({
+                          ...state,
+                          subject: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+
+                  <label className="grid gap-2">
+                    <span className="text-xs font-medium">Sender name</span>
+                    <input
+                      className={inputClass}
+                      value={state.senderName}
+                      onChange={(event) =>
+                        onChange({
+                          ...state,
+                          senderName: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+
+                  <label className="grid gap-2">
+                    <span className="text-xs font-medium">Sender email</span>
+                    <input
+                      className={inputClass}
+                      type="email"
+                      placeholder="sales@nyumbazetu.com"
+                      value={state.senderEmail}
+                      onChange={(event) =>
+                        onChange({
+                          ...state,
+                          senderEmail: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <NyumbaZetuBriefEditor
+                draft={draft}
+                onChange={setDraft}
+              />
+            </div>
+
+            <main className="min-w-0">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Newsletter canvas
+              </div>
+
+              <NewsletterCanvas draft={draft} />
+            </main>
+
+            <NyumbaZetuBriefPreviewPanel draft={draft} />
+          </div>
+        </section>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[15rem_minmax(0,1fr)_18rem]">
           <aside className="rounded-xl border border-border bg-card p-4 shadow-sm">

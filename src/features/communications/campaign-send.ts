@@ -3,6 +3,7 @@ import type {
   CampaignDraftState,
   ResolvedRecipient,
 } from "./types";
+import { renderNewsletter } from "./newsletter/render-newsletter";
 
 export async function prepareCampaign(
   state: CampaignDraftState,
@@ -21,11 +22,30 @@ export async function prepareCampaign(
       ? "csv_upload"
       : "leads";
 
+  const newsletterContent =
+    state.campaignType === "newsletter" && state.newsletter
+      ? renderNewsletter(state.newsletter, {
+          contact_name: "{contact_name}",
+          company_name: "{company_name}",
+          area: "{area}",
+          unsubscribe_url: "{unsubscribe_url}",
+        })
+      : null;
+
+  const campaignBody =
+    newsletterContent?.text ?? state.body;
+
+  const campaignHtml =
+    newsletterContent?.html;
+
   const campaign = await communicationsApi.create({
     name: state.name,
     communication_type: state.campaignType,
     subject: state.subject,
-    body: state.body,
+    body: campaignBody,
+    ...(campaignHtml
+      ? { html_body: campaignHtml }
+      : {}),
     sender_name: state.senderName,
     sender_email: state.senderEmail,
     recipient_type: recipientType,

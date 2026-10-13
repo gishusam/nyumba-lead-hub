@@ -38,6 +38,7 @@ export function NewsletterPreview({
     company_name: recipient.company_name,
     area: recipient.area,
     unsubscribe_url: `https://nyumbazetu.com/unsubscribe?email=${encodeURIComponent(recipient.email)}`,
+    asset_base_url: window.location.origin,
   });
   const errors = validateNewsletter(state.newsletter);
 

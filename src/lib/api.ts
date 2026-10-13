@@ -547,6 +547,7 @@ export type CampaignCreateInput = {
   communication_type: CommunicationType;
   subject: string;
   body: string;
+  html_body?: string;
   sender_name: string;
   sender_email: string;
   recipient_type: CampaignRecipientType;

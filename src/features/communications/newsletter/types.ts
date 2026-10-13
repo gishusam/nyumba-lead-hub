@@ -1,7 +1,8 @@
 export type NewsletterTemplateKey =
   | "book-demo"
   | "product-update"
-  | "stay-connected";
+  | "stay-connected"
+  | "nyumba-zetu-brief";
 
 export type CtaDestinationType = "calendar" | "landing_page" | "whatsapp";
 export type NewsletterAlignment = "left" | "center" | "right";
@@ -94,6 +95,7 @@ export type NewsletterPersonalization = {
   company_name: string;
   area: string;
   unsubscribe_url: string;
+  asset_base_url?: string;
 };
 
 export type RenderedNewsletter = {

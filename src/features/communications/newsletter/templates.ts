@@ -54,6 +54,59 @@ function bookDemoBlocks(): NewsletterBlock[] {
   ];
 }
 
+function nyumbaZetuBriefBlocks(): NewsletterBlock[] {
+  return [
+    {
+      id: id("heading"),
+      type: "heading",
+      text: "Run better properties.\nGrow with confidence.",
+      level: 1,
+      align: "left",
+    },
+    {
+      id: id("text"),
+      type: "text",
+      text:
+        "Hi {contact_name}, growth becomes easier when customer information, follow-ups and team activity are in one place. Nyumba Zetu brings that work together.",
+      align: "left",
+    },
+    {
+      id: id("image"),
+      type: "image",
+      url: "https://images.unsplash.com/photo-1757436382135-5cb8e5cbcda5?auto=format&fit=crop&w=1200&q=85",
+      alt: "Modern property development",
+      align: "center",
+      width: 100,
+    },
+    {
+      id: id("feature-row"),
+      type: "feature-row",
+      items: [
+        {
+          title: "Stay organized",
+          body: "Keep important customer and sales activity in one clear workflow.",
+        },
+        {
+          title: "Follow up faster",
+          body: "Give your team better visibility into leads, outreach and next actions.",
+        },
+        {
+          title: "Make smarter decisions",
+          body: "Turn operational information into useful reporting.",
+        },
+      ],
+    },
+    {
+      id: id("button"),
+      type: "button",
+      label: "Book a Demo",
+      destinationType: "calendar",
+      url: "",
+      align: "left",
+    },
+  ];
+}
+
 function productUpdateBlocks(): NewsletterBlock[] {
   return [
     {
@@ -156,11 +209,13 @@ export function createNewsletterFromTemplate(
   templateKey: NewsletterTemplateKey,
 ): NewsletterDraft {
   const blocks =
-    templateKey === "book-demo"
-      ? bookDemoBlocks()
-      : templateKey === "product-update"
-        ? productUpdateBlocks()
-        : stayConnectedBlocks();
+    templateKey === "nyumba-zetu-brief"
+      ? nyumbaZetuBriefBlocks()
+      : templateKey === "book-demo"
+        ? bookDemoBlocks()
+        : templateKey === "product-update"
+          ? productUpdateBlocks()
+          : stayConnectedBlocks();
 
   const button = blocks.find((block) => block.type === "button");
 
@@ -186,6 +241,11 @@ export function createNewsletterFromTemplate(
 }
 
 export const NEWSLETTER_TEMPLATES = [
+  {
+    key: "nyumba-zetu-brief" as const,
+    name: "Nyumba Zetu Brief",
+    description: "Premium editorial newsletter for property insights, updates and campaigns.",
+  },
   {
     key: "book-demo" as const,
     name: "Book a Demo",
